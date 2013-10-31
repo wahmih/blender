@@ -565,7 +565,7 @@ class STAIRS(bpy.types.Operator):
     radio = FloatProperty(name='',min=0.001,max= 0.500, default= 0.20,precision=3, description='Radius factor for rounded')
     curve = bpy.props.BoolProperty(name = "Include deformation handles",description="Include a curve to modify the stairs curve.",default = False)
 
-    step_num=IntProperty(name='Number of steps',min=1,max= 20, default= 3, description='Number total of steps')
+    step_num=IntProperty(name='Number of steps',min=1,max= 1000, default= 3, description='Number total of steps')
     max_width = FloatProperty(name='Width',min=0.001,max= 10, default= 1,precision=3, description='Step maximum width')
     depth = FloatProperty(name='Depth',min=0.001,max= 10, default= 0.30,precision=3, description='Depth of the step')
     shift = FloatProperty(name='Shift',min=0.001,max= 1, default= 1,precision=3, description='Step shift in Y axis')

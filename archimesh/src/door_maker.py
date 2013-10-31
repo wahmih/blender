@@ -509,7 +509,7 @@ def door_model_03(frame_size,frame_width,frame_height,frame_thick,openside):
     # Mesh data
     #------------------------------------
     # Open to right or left
-    if(self.openside == "1"):
+    if(openside == "1"):
         side = 1
         minX = wf * -1
         maxX = 0.0
