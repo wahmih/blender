@@ -338,7 +338,11 @@ def create_room(self,context,objName,height,baseboard = False):
     mymesh = bpy.data.meshes.new(objName)
     myobject = bpy.data.objects.new(objName, mymesh)
     
-    myobject.location = bpy.context.scene.cursor_location
+    if (baseboard == False):
+        myobject.location = bpy.context.scene.cursor_location
+    else:
+        myobject.location = (0,0,0)
+        
     bpy.context.scene.objects.link(myobject)
     
     mymesh.from_pydata(myVertex, [], myFaces)
@@ -460,7 +464,7 @@ def create_floor(self,context,typ,myRoom):
     mymesh = bpy.data.meshes.new(typ)
     myobject = bpy.data.objects.new(typ, mymesh)
     
-    myobject.location = bpy.context.scene.cursor_location
+    myobject.location = (0,0,0)
     bpy.context.scene.objects.link(myobject)
     
     mymesh.from_pydata(myVertex, [], myFaces)
