@@ -125,7 +125,7 @@ def create_mesh(self,context):
     # Rectangular top
     #------------------------
     if (self.box_top == True):
-        box_top = create_rectangular_base(self,context,"Column_box_bottom", self.box_top_x, self.box_top_y, self.box_top_z)
+        box_top = create_rectangular_base(self,context,"Column_box_top", self.box_top_x, self.box_top_y, self.box_top_z,self.ramp)
         bpy.ops.object.select_all(False)
         box_top.select = True
         bpy.context.scene.objects.active = box_top
@@ -157,21 +157,23 @@ def create_mesh(self,context):
     if (self.array_num_x > 0):    
         if (self.arc_top):
             distance = ((self.arc_radio + self.arc_gap) * 2)
+            zmove = 0
         else:
-            distance = self.array_space_x    
+            distance = self.array_space_x
+            zmove = self.array_space_z    
             
         if (self.crt_array):
-            set_modifier_array(myColumn,"X",0,self.array_num_x, True, distance) 
+            set_modifier_array(myColumn,"X",0,self.array_num_x, True, distance,zmove) 
     
             if (self.box_base == True):
-                set_modifier_array(box_bottom,"X",0,self.array_num_x,True,distance) 
+                set_modifier_array(box_bottom,"X",0,self.array_num_x,True,distance,zmove) 
             if (self.box_top == True):
-                set_modifier_array(box_top,"X",0,self.array_num_x,True,distance)
+                set_modifier_array(box_top,"X",0,self.array_num_x,True,distance,zmove)
     
             if (self.cir_base == True):
-                set_modifier_array(cir_bottom,"X",0,self.array_num_x, True, distance) 
+                set_modifier_array(cir_bottom,"X",0,self.array_num_x, True, distance,zmove) 
             if (self.cir_top == True):
-                set_modifier_array(cir_top,"X",0,self.array_num_x, True, distance) 
+                set_modifier_array(cir_top,"X",0,self.array_num_x, True, distance,zmove) 
             
             if (self.arc_top):
                 if (self.array_num_x > 1):
@@ -201,6 +203,7 @@ def create_mesh(self,context):
             if (self.arc_top):
                 if (self.array_num_y > 1):
                     set_modifier_array(myArc,"Y",1,self.array_num_y - 1) # one less
+
                     
     #------------------------
     # Create materials        
@@ -249,7 +252,7 @@ def create_circular_column(self,context,objName,radio_top,radio_mid,radio_bottom
     for pie in pies:
         x = math.cos(math.radians(pie)) * radio_mid
         y = math.sin(math.radians(pie)) * radio_mid
-        myPoint = [(x,y,height / 2)]
+        myPoint = [(x,y,(height / 2) + ((height / 2) * self.shift) )]
         myVertex.extend(myPoint)
     # Add top circle
     for pie in pies:
@@ -358,10 +361,39 @@ def create_torus(self,context,objName,radio_inside, radio_outside, height):
 #------------------------------------------------------------------------------
 # Create rectangular base
 #------------------------------------------------------------------------------
-def create_rectangular_base(self,context,objName,x,y,z):
-         
-    myVertex = [(-x/2, -y/2, 0.0), (- x/2, y/2, 0.0), (x/2, y/2, 0.0), (x/2, -y/2, 0.0)
-                ,(-x/2, -y/2, z), (- x/2, y/2, z), (x/2, y/2, z), (x/2, -y/2, z)]
+def create_rectangular_base(self,context,objName,x,y,z,ramp= False):
+
+    elements = self.array_num_x - 1
+    height = self.array_space_z * elements
+    width = self.array_space_x * elements
+    if (width > 0):
+        angle = math.atan(height / width)
+    else:
+        angle = 0    
+        
+    radio = math.sqrt((x * x) + (self.array_space_z * self.array_space_z))
+    disp = radio * math.sin(angle)
+       
+    if (ramp == False or self.arc_top):
+        addZ1 = 0
+        addZ2 = 0   
+    else:
+        if (self.array_space_z >= 0):
+            addZ1 = 0
+            addZ2 = disp
+        else:
+            addZ1 = disp * -1
+            addZ2 = 0
+        
+    myVertex = [(-x/2, -y/2, 0.0)
+                ,(-x/2, y/2, 0.0)
+                ,(x/2, y/2, 0.0)
+                ,(x/2, -y/2, 0.0)
+                ,(-x/2, -y/2, z + addZ1)
+                ,(-x/2, y/2, z + addZ1)
+                ,(x/2, y/2, z + addZ2)
+                ,(x/2, -y/2, z + addZ2)]
+    
     myFaces = [(0,1,2,3),(0,1,5,4),(1,2,6,5),(2,6,7,3),(5,6,7,4),(0,4,7,3)]
     
     mesh = bpy.data.meshes.new(objName)

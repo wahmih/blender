@@ -92,6 +92,29 @@ def create_mesh(self,context):
             
     return
 #------------------------------------------------------------------------------
+# Verify visibility of walls
+#------------------------------------------------------------------------------
+def check_visibility(h,base):
+    # Visible
+    if (h == '0'):
+        return True
+    # Wall
+    if (h == '2'):
+        if (base == True):
+            return False
+        else:
+            return True
+    # Baseboard
+    if (h == '1'):
+        if (base == True):
+            return True
+        else:
+            return False
+    # Hidden
+    if (h == '3'):
+        return False
+
+#------------------------------------------------------------------------------
 # Create Room/baseboard
 # Some custom values are passed using self container (self.myvariable)
 #------------------------------------------------------------------------------
@@ -104,206 +127,286 @@ def create_room(self,context,objName,height,baseboard = False):
     # Horizontal (First)
     #---------------------------------
     if (self.wall_num >= 1):
+        # Calculate size using angle
+        sizeX = math.cos(math.radians(self.r01)) * self.w01
+        sizeY = math.sin(math.radians(self.r01)) * self.w01
+
         if (self.a01 == False or baseboard == True):
-            myVertex.extend([(0.0,0.0,0.0),(0.0,0.0,height),(self.w01,0.0,height),(self.w01,0.0,0.0)])
-            myFaces.extend([(0,1,2,3)])
+            myVertex.extend([(0.0,0.0,0.0),(0.0,0.0,height)
+                             ,(sizeX,sizeY,height)
+                             ,(sizeX,sizeY,0.0)])
+            if (check_visibility(self.h01,baseboard)):
+                myFaces.extend([(0,1,2,3)])
             lastFace = 2
-            lastX = self.w01
-            lastY = 0.0
+            lastX = sizeX
+            lastY = sizeY
         else:
             mid = self.w01 / 2 + ((self.w01 / 2) * self.f01)
+            midX = math.cos(math.radians(self.r01)) * mid
+            midY = math.sin(math.radians(self.r01)) * mid
+            
             # first
             myVertex.extend([(0.0,0.0,0.0)
                              ,(0.0,0.0,height)
-                             ,(mid,0.0,height + self.m01)
-                             ,(mid,0.0,0.0)])
+                             ,(midX,midY,height + self.m01)
+                             ,(midX,midY,0.0)])
             if (math.fabs(self.f01) != 1):
-                myFaces.extend([(0,1,2,3)])  
+                if (check_visibility(self.h01,baseboard)):
+                    myFaces.extend([(0,1,2,3)])  
             # second
-            myVertex.extend([(self.w01,0.0,0.0),(self.w01,0.0,height)])
-            if (math.fabs(self.f01) != 1): 
-                myFaces.extend([(2,3,4,5)])
-            else:    
-                myFaces.extend([(0,1,5,4),(1,2,5)])
+            myVertex.extend([(sizeX,sizeY,0.0),(sizeX,sizeY,height)])
+            if (check_visibility(self.h01,baseboard)):
+                if (math.fabs(self.f01) != 1): 
+                    myFaces.extend([(2,3,4,5)])
+                else:    
+                    myFaces.extend([(0,1,5,4),(1,2,5)])
             
             lastFace = 4
                 
-            lastX = self.w01
-            lastY = 0.0
-            
+            lastX = sizeX
+            lastY = sizeY
         
     #---------------------------------
     # Vertical
     #---------------------------------
     if (self.wall_num >= 2):
-        myDat = vertical_wall(self.a01,
+        myDat = make_wall(self.a01,
                               self.a02,self.w02,self.m02,self.f02
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r02,self.h02)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Horizontal
     if (self.wall_num >= 3):
-        myDat = horizontal_wall(self.a02,
+        myDat = make_wall(self.a02,
                               self.a03,self.w03,self.m03,self.f03
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
+                              ,lastX,lastY,height,myVertex,myFaces,self.r03,self.h03)
         lastX = myDat[0]
-        lastFace = myDat[1]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Vertical
     if (self.wall_num >= 4):
-        myDat = vertical_wall(self.a03,
+        myDat = make_wall(self.a03,
                               self.a04,self.w04,self.m04,self.f04
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r04,self.h04)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Horizontal
     if (self.wall_num >= 5):
-        myDat = horizontal_wall(self.a04,
+        myDat = make_wall(self.a04,
                               self.a05,self.w05,self.m05,self.f05
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
+                              ,lastX,lastY,height,myVertex,myFaces,self.r05,self.h05)
         lastX = myDat[0]
-        lastFace = myDat[1]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Vertical
     if (self.wall_num >= 6):
-        myDat = vertical_wall(self.a05,
+        myDat = make_wall(self.a05,
                               self.a06,self.w06,self.m06,self.f06
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r06,self.h06)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
 
     # Horizontal
     if (self.wall_num >= 7):
-        myDat = horizontal_wall(self.a06,
+        myDat = make_wall(self.a06,
                               self.a07,self.w07,self.m07,self.f07
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
+                              ,lastX,lastY,height,myVertex,myFaces,self.r07,self.h07)
         lastX = myDat[0]
-        lastFace = myDat[1]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Vertical
     if (self.wall_num >= 8):
-        myDat = vertical_wall(self.a07,
+        myDat = make_wall(self.a07,
                               self.a08,self.w08,self.m08,self.f08
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r08,self.h08)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
 
     # Horizontal
     if (self.wall_num >= 9):
-        myDat = horizontal_wall(self.a08,
+        myDat = make_wall(self.a08,
                               self.a09,self.w09,self.m09,self.f09
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
+                              ,lastX,lastY,height,myVertex,myFaces,self.r09,self.h09)
         lastX = myDat[0]
-        lastFace = myDat[1]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Vertical
     if (self.wall_num >= 10):
-        myDat = vertical_wall(self.a09,
+        myDat = make_wall(self.a09,
                               self.a10,self.w10,self.m10,self.f10
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r10,self.h10)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
 
     # Horizontal
     if (self.wall_num >= 11):
-        myDat = horizontal_wall(self.a10,
+        myDat = make_wall(self.a10,
                               self.a11,self.w11,self.m11,self.f11
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
+                              ,lastX,lastY,height,myVertex,myFaces,self.r11,self.h11)
         lastX = myDat[0]
-        lastFace = myDat[1]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Vertical
     if (self.wall_num >= 12):
-        myDat = vertical_wall(self.a11,
+        myDat = make_wall(self.a11,
                               self.a12,self.w12,self.m12,self.f12
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r12,self.h12)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
 
     # Horizontal
     if (self.wall_num >= 13):
-        myDat = horizontal_wall(self.a12,
+        myDat = make_wall(self.a12,
                               self.a13,self.w13,self.m13,self.f13
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
+                              ,lastX,lastY,height,myVertex,myFaces,self.r13,self.h13)
         lastX = myDat[0]
-        lastFace = myDat[1]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Vertical
     if (self.wall_num >= 14):
-        myDat = vertical_wall(self.a13,
+        myDat = make_wall(self.a13,
                               self.a14,self.w14,self.m14,self.f14
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r14,self.h14)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
 
     # Horizontal
     if (self.wall_num >= 15):
-        myDat = horizontal_wall(self.a14,
+        myDat = make_wall(self.a14,
                               self.a15,self.w15,self.m15,self.f15
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
+                              ,lastX,lastY,height,myVertex,myFaces,self.r15,self.h15)
         lastX = myDat[0]
-        lastFace = myDat[1]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Vertical
     if (self.wall_num >= 16):
-        myDat = vertical_wall(self.a15,
+        myDat = make_wall(self.a15,
                               self.a16,self.w16,self.m16,self.f16
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r16,self.h16)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
 
     # Horizontal
     if (self.wall_num >= 17):
-        myDat = horizontal_wall(self.a16,
+        myDat = make_wall(self.a16,
                               self.a17,self.w17,self.m17,self.f17
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
+                              ,lastX,lastY,height,myVertex,myFaces,self.r17,self.h17)
         lastX = myDat[0]
-        lastFace = myDat[1]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Vertical
     if (self.wall_num >= 18):
-        myDat = vertical_wall(self.a17,
+        myDat = make_wall(self.a17,
                               self.a18,self.w18,self.m18,self.f18
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r18,self.h18)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
 
     # Horizontal
     if (self.wall_num >= 19):
-        myDat = horizontal_wall(self.a18,
+        myDat = make_wall(self.a18,
                               self.a19,self.w19,self.m19,self.f19
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
+                              ,lastX,lastY,height,myVertex,myFaces,self.r19,self.h19)
         lastX = myDat[0]
-        lastFace = myDat[1]
+        lastY = myDat[1]
+        lastFace = myDat[2]
 
     # Vertical
     if (self.wall_num >= 20):
-        myDat = vertical_wall(self.a19,
+        myDat = make_wall(self.a19,
                               self.a20,self.w20,self.m20,self.f20
                               ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces)
-        lastY = myDat[0]
-        lastFace = myDat[1]
+                              ,lastX,lastY,height,myVertex,myFaces,self.r20,self.h20)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
+
+    # Horizontal
+    if (self.wall_num >= 21):
+        myDat = make_wall(self.a20,
+                              self.a21,self.w21,self.m21,self.f21
+                              ,baseboard,lastFace
+                              ,lastX,lastY,height,myVertex,myFaces,self.r21,self.h21)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
+
+    # Vertical
+    if (self.wall_num >= 22):
+        myDat = make_wall(self.a21,
+                              self.a22,self.w22,self.m22,self.f22
+                              ,baseboard,lastFace
+                              ,lastX,lastY,height,myVertex,myFaces,self.r22,self.h22)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
+
+    # Horizontal
+    if (self.wall_num >= 23):
+        myDat = make_wall(self.a22,
+                              self.a23,self.w23,self.m23,self.f23
+                              ,baseboard,lastFace
+                              ,lastX,lastY,height,myVertex,myFaces,self.r23,self.h23)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
+
+    # Vertical
+    if (self.wall_num >= 24):
+        myDat = make_wall(self.a23,
+                              self.a24,self.w24,self.m24,self.f24
+                              ,baseboard,lastFace
+                              ,lastX,lastY,height,myVertex,myFaces,self.r24,self.h24)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
+
+    # Horizontal
+    if (self.wall_num >= 25):
+        myDat = make_wall(self.a24,
+                              self.a25,self.w25,self.m25,self.f25
+                              ,baseboard,lastFace
+                              ,lastX,lastY,height,myVertex,myFaces,self.r25,self.h25)
+        lastX = myDat[0]
+        lastY = myDat[1]
+        lastFace = myDat[2]
         
     # Close room
     if (self.merge == True):
@@ -327,7 +430,12 @@ def create_room(self,context,objName,height,baseboard = False):
             or (self.wall_num == 17 and self.a17 == True)
             or (self.wall_num == 18 and self.a18 == True)
             or (self.wall_num == 19 and self.a19 == True)
-            or (self.wall_num == 20 and self.a20 == True)):
+            or (self.wall_num == 20 and self.a20 == True)
+            or (self.wall_num == 21 and self.a21 == True)
+            or (self.wall_num == 22 and self.a22 == True)
+            or (self.wall_num == 23 and self.a23 == True)
+            or (self.wall_num == 24 and self.a24 == True)
+            or (self.wall_num == 25 and self.a25 == True)):
                 myFaces.extend([(0,1,lastFace + 1, lastFace)])
             else:   
                 myFaces.extend([(0,1,lastFace, lastFace + 1)])
@@ -350,84 +458,64 @@ def create_room(self,context,objName,height,baseboard = False):
     
     return myobject
 #------------------------------------------------------------------------------
-# Vertical Wall
+# Make a Wall
 #------------------------------------------------------------------------------
-def vertical_wall(prv,advance,size,over,factor,baseboard,lastFace,lastX,lastY,height,myVertex,myFaces):
+def make_wall(prv,advance,size,over,factor,baseboard,lastFace,lastX,lastY,height,myVertex,myFaces,angle,hide):
+    
+    # if angle negative, calculate real
+    # use add because the angle is negative 
+    if (angle < 0):
+        angle = 360 + angle
+    
+    # Calculate size using angle
+    sizeX = math.cos(math.radians(angle)) * size
+    sizeY = math.sin(math.radians(angle)) * size
+    
+    # Create faces
     if (advance == False or baseboard == True):
-        myVertex.extend([(lastX,size + lastY,height),(lastX,size + lastY,0.0)])
-        if (prv == False or baseboard == True):
-            myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)]) # no advance
-        else:
-            myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)]) # advance
+        myVertex.extend([(lastX + sizeX,lastY + sizeY,height)
+                         ,(lastX + sizeX,lastY + sizeY,0.0)])
+        if (check_visibility(hide,baseboard)):
+            if (prv == False or baseboard == True):
+                myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)]) # no advance
+            else:
+                myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)]) # advance
             
         lastFace = lastFace + 2
     else:
         mid = size / 2 + ((size / 2) * factor)
+        midX = math.cos(math.radians(angle)) * mid
+        midY = math.sin(math.radians(angle)) * mid
         # first
-        myVertex.extend([(lastX,mid + lastY,height + over)
-                         ,(lastX,mid + lastY,0.0)])
-        if (math.fabs(factor) != 1):
-            if (prv == False):
-                myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)]) # no advance
-            else:
-                myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)]) # advance
+        myVertex.extend([(lastX + midX,lastY + midY,height + over)
+                         ,(lastX + midX,lastY + midY,0.0)])
+        if (check_visibility(hide,baseboard)):
+            if (math.fabs(factor) != 1):
+                if (prv == False):
+                    myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)]) # no advance
+                else:
+                    myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)]) # advance
         # second
-        myVertex.extend([(lastX,lastY + size,0.0),(lastX,lastY + size,height)])
-        if (math.fabs(factor) != 1): 
-            myFaces.extend([(lastFace + 2,lastFace + 3,lastFace + 4,lastFace+ 5)])
-        else:   
-            if (prv == False):
-                myFaces.extend([(lastFace, lastFace + 5, lastFace + 4, lastFace + 1)
-                               ,(lastFace, lastFace + 2, lastFace + 5)])
-            else:
-                myFaces.extend([(lastFace, lastFace + 4, lastFace + 5, lastFace + 1)
+        myVertex.extend([(lastX + sizeX,lastY + sizeY,0.0)
+                         ,(lastX + sizeX,lastY + sizeY,height)])
+        if (check_visibility(hide,baseboard)):
+            if (math.fabs(factor) != 1): 
+                myFaces.extend([(lastFace + 2,lastFace + 3,lastFace + 4,lastFace+ 5)])
+            else:   
+                if (prv == False):
+                    myFaces.extend([(lastFace, lastFace + 5, lastFace + 4, lastFace + 1)
+                                   ,(lastFace, lastFace + 2, lastFace + 5)])
+                else:
+                    myFaces.extend([(lastFace, lastFace + 4, lastFace + 5, lastFace + 1)
                                ,(lastFace + 1, lastFace + 2, lastFace + 5)])
             
         lastFace = lastFace + 4
         
-    lastY = size + lastY
+    lastX = lastX + sizeX
+    lastY = lastY + sizeY
+    
         
-    return (lastY,lastFace)
-
-#------------------------------------------------------------------------------
-# Horizontal Wall
-#------------------------------------------------------------------------------
-def horizontal_wall(prv,advance,size,over,factor,baseboard,lastFace,lastX,lastY,height,myVertex,myFaces):
-    if (advance == False or baseboard == True):
-        myVertex.extend([(lastX + size,lastY,height),(lastX + size,lastY,0.0)])
-        if (prv == False or baseboard == True):
-            myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)]) # no advance
-        else:
-            myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)]) # advance
-            
-        lastFace = lastFace + 2
-    else:
-        mid = size / 2 + ((size / 2) * factor)
-        # first
-        myVertex.extend([(mid + lastX,lastY,height + over)
-                         ,(mid + lastX,lastY,0.0)])
-        if (math.fabs(factor) != 1):
-            if (prv == False):
-                myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)]) # no advance
-            else:
-                myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)]) # advance
-        # second
-        myVertex.extend([(lastX + size,lastY,0.0),(lastX + size,lastY,height)])
-        if (math.fabs(factor) != 1): 
-            myFaces.extend([(lastFace + 2,lastFace + 3,lastFace + 4,lastFace+ 5)])
-        else:   
-            if (prv == False):
-                myFaces.extend([(lastFace, lastFace + 5, lastFace + 4, lastFace + 1)
-                               ,(lastFace, lastFace + 2, lastFace + 5)])
-            else:
-                myFaces.extend([(lastFace, lastFace + 4, lastFace + 5, lastFace + 1)
-                               ,(lastFace + 1, lastFace + 2, lastFace + 5)])
-            
-        lastFace = lastFace + 4
-        
-    lastX = size + lastX
-        
-    return (lastX,lastFace)
+    return (lastX,lastY,lastFace)
 
 #------------------------------------------------------------------------------
 # Create Floor or Ceiling

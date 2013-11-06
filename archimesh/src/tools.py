@@ -108,7 +108,7 @@ def set_modifier_mirror(myObject,axis="Y"):
 #--------------------------------------------------------------------
 # Add modifier (array)
 #--------------------------------------------------------------------
-def set_modifier_array(myObject,axis,move,repeat, fix=False, fixmove = 0):
+def set_modifier_array(myObject,axis,move,repeat, fix=False, fixmove = 0,zmove = 0):
     bpy.ops.object.select_all(False)
     myObject.select = True
     bpy.context.scene.objects.active = myObject
@@ -124,11 +124,18 @@ def set_modifier_array(myObject,axis,move,repeat, fix=False, fixmove = 0):
                         mod.relative_offset_displace[0] = move
                         mod.constant_offset_displace[0] = fixmove
                         mod.relative_offset_displace[1] = 0.0
+                        mod.constant_offset_displace[1] = 0.0
+                        mod.relative_offset_displace[2] = 0.0
+                        mod.constant_offset_displace[2] = zmove
                         
                     if (axis == "Y"):
                         mod.relative_offset_displace[0] = 0.0
+                        mod.constant_offset_displace[0] = 0.0
                         mod.relative_offset_displace[1] = move
                         mod.constant_offset_displace[1] = fixmove
+                        mod.relative_offset_displace[2] = 0.0
+                        mod.constant_offset_displace[2] = 0.0
+                        
                     
                     
 #--------------------------------------------------------------------

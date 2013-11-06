@@ -30,7 +30,7 @@ bl_info = {
     "name": "Archimesh",
     "author": "Antonio Vazquez (antonioya)",
     "location": "View3D > Add > Mesh > Archimesh",
-    "version": (0, 3),
+    "version": (0, 4),
     "blender": (2, 6, 8),
     "description": "Generate rooms, door, roofs, stairs and other architecture stuff automatically.",
     "category": "Add Mesh"}
@@ -68,6 +68,180 @@ import bpy
 from bpy.props import *
 
 #------------------------------------------------------------------
+# Reset room default values
+# Rooms
+#------------------------------------------------------------------
+def reset_room(self):
+    self.room_height=2.4
+    self.wall_width=0.0
+    self.inverse = False
+    self.crt_mat = True
+    self.wall_num=1
+    self.baseboard = True
+    self.base_width=0.015
+    self.base_height=0.12
+    self.ceiling = False
+    self.floor = False
+    self.merge = False
+   
+    self.w01=1
+    self.w02=1
+    self.w03=1
+    self.w04=1
+    self.w05=1
+    self.w06=1
+    self.w07=1
+    self.w08=1
+    self.w09=1
+    self.w10=1
+    self.w11=1
+    self.w12=1
+    self.w13=1
+    self.w14=1
+    self.w15=1
+    self.w16=1
+    self.w17=1
+    self.w18=1
+    self.w19=1
+    self.w20=1
+    self.w11=1
+    self.w12=1
+    self.w23=1
+    self.w24=1
+    self.w25=1
+    
+    self.a01= False
+    self.a02= False
+    self.a03= False
+    self.a04= False
+    self.a05= False
+    self.a06= False
+    self.a07= False
+    self.a08= False
+    self.a09= False
+    self.a10= False
+    self.a11= False
+    self.a12= False
+    self.a13= False
+    self.a14= False
+    self.a15= False
+    self.a16= False
+    self.a17= False
+    self.a18= False
+    self.a19= False
+    self.a20= False
+    self.a21= False
+    self.a22= False
+    self.a23= False
+    self.a24= False
+    self.a25= False
+   
+    self.m01= 0
+    self.m02= 0
+    self.m03= 0
+    self.m04= 0
+    self.m05= 0
+    self.m06= 0
+    self.m07= 0
+    self.m08= 0
+    self.m09= 0
+    self.m10= 0
+    self.m11= 0
+    self.m12= 0
+    self.m13= 0
+    self.m14= 0
+    self.m15= 0
+    self.m16= 0
+    self.m17= 0
+    self.m18= 0
+    self.m19= 0
+    self.m20= 0
+    self.m21= 0
+    self.m22= 0
+    self.m23= 0
+    self.m24= 0
+    self.m25= 0
+       
+    self.f01= 0
+    self.f02= 0
+    self.f03= 0
+    self.f04= 0
+    self.f05= 0
+    self.f06= 0
+    self.f07= 0
+    self.f08= 0
+    self.f09= 0
+    self.f10= 0
+    self.f11= 0
+    self.f12= 0
+    self.f13= 0
+    self.f14= 0
+    self.f15= 0
+    self.f16= 0
+    self.f17= 0
+    self.f18= 0
+    self.f19= 0
+    self.f20= 0
+    self.f21= 0
+    self.f22= 0
+    self.f23= 0
+    self.f24= 0
+    self.f25= 0
+       
+    self.r01= 0
+    self.r02= 90
+    self.r03= 0
+    self.r04= 90
+    self.r05= 0
+    self.r06= 90
+    self.r07= 0
+    self.r08= 90
+    self.r09= 0
+    self.r10= 90
+    self.r11= 0
+    self.r12= 90
+    self.r13= 0
+    self.r14= 90
+    self.r15= 0
+    self.r16= 90
+    self.r17= 0
+    self.r18= 90
+    self.r19= 0
+    self.r20= 90
+    self.r21= 0
+    self.r22= 90
+    self.r23= 0
+    self.r24= 90
+    self.r25= 0
+    
+    self.h01 = '0'
+    self.h02 = '0'
+    self.h03 = '0'
+    self.h04 = '0'
+    self.h05 = '0'
+    self.h06 = '0'
+    self.h07 = '0'
+    self.h08 = '0'
+    self.h09 = '0'
+    self.h10 = '0'
+    self.h11 = '0'
+    self.h12 = '0'
+    self.h13 = '0'
+    self.h14 = '0'
+    self.h15 = '0'
+    self.h16 = '0'
+    self.h17 = '0'
+    self.h18 = '0'
+    self.h19 = '0'
+    self.h20 = '0'
+    self.h21 = '0'
+    self.h22 = '0'
+    self.h23 = '0'
+    self.h24 = '0'
+    self.h25 = '0'
+       
+    self.reset = '0';
+#------------------------------------------------------------------
 # Define UI class
 # Rooms
 #------------------------------------------------------------------
@@ -77,13 +251,17 @@ class ROOM(bpy.types.Operator):
     bl_description = "Room Generator"
     bl_options = {'REGISTER', 'UNDO'}
     
+    # reset function
+    reset=EnumProperty(items = (('0',"Keep last values",""),('1',"Reset to Default","")),
+                                name="",description="Reset all values to default parameters")
+
     # Define properties
     room_height=FloatProperty(name='Height',min=0.001,max= 20, default= 2.4,precision=3, description='Room height')
     wall_width=FloatProperty(name='Thickness',min=0.000,max= 1, default= 0.0,precision=3, description='Thickness of the walls')
     inverse = bpy.props.BoolProperty(name = "Inverse",description="Inverse normals to outside.",default = False)
     crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
 
-    wall_num=IntProperty(name='Number of Walls',min=1,max= 20, default= 1, description='Number total of walls in the room')
+    wall_num=IntProperty(name='Number of Walls',min=1,max= 25, default= 1, description='Number total of walls in the room')
     
     baseboard = bpy.props.BoolProperty(name = "Create baseboard",description="Create a baseboard automatically.",default = True)
     base_width=FloatProperty(name='Width',min=0.001,max= 0.50, default= 0.015,precision=3, description='Baseboard width')
@@ -94,106 +272,208 @@ class ROOM(bpy.types.Operator):
 
     merge = bpy.props.BoolProperty(name = "Close walls",description="Close walls to create a full closed room.",default = False)
    
-    w01=FloatProperty(name='Wall 01 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w02=FloatProperty(name='Wall 02 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w03=FloatProperty(name='Wall 03 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w04=FloatProperty(name='Wall 04 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w05=FloatProperty(name='Wall 05 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w06=FloatProperty(name='Wall 06 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w07=FloatProperty(name='Wall 07 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w08=FloatProperty(name='Wall 08 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w09=FloatProperty(name='Wall 09 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w10=FloatProperty(name='Wall 10 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w11=FloatProperty(name='Wall 11 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w12=FloatProperty(name='Wall 12 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w13=FloatProperty(name='Wall 13 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w14=FloatProperty(name='Wall 14 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w15=FloatProperty(name='Wall 15 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w16=FloatProperty(name='Wall 16 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w17=FloatProperty(name='Wall 17 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w18=FloatProperty(name='Wall 18 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w19=FloatProperty(name='Wall 19 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w20=FloatProperty(name='Wall 20 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w01=FloatProperty(name='Wall01 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w02=FloatProperty(name='Wall02 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w03=FloatProperty(name='Wall03 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w04=FloatProperty(name='Wall04 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w05=FloatProperty(name='Wall05 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w06=FloatProperty(name='Wall06 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w07=FloatProperty(name='Wall07 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w08=FloatProperty(name='Wall08 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w09=FloatProperty(name='Wall09 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w10=FloatProperty(name='Wall10 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w11=FloatProperty(name='Wall11 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w12=FloatProperty(name='Wall12 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w13=FloatProperty(name='Wall13 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w14=FloatProperty(name='Wall14 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w15=FloatProperty(name='Wall15 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w16=FloatProperty(name='Wall16 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w17=FloatProperty(name='Wall17 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w18=FloatProperty(name='Wall18 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w19=FloatProperty(name='Wall19 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w20=FloatProperty(name='Wall20 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w21=FloatProperty(name='Wall21 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w22=FloatProperty(name='Wall22 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w23=FloatProperty(name='Wall23 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w24=FloatProperty(name='Wall24 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w25=FloatProperty(name='Wall25 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
     
     a01 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m01=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f01=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r01=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a02 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m02=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f02=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r02=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
     
     a03 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m03=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f03=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r03=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a04 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m04=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f04=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r04=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
     
     a05 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m05=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f05=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r05=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a06 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m06=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f06=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r06=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
     
     a07 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m07=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f07=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r07=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a08 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m08=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f08=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r08=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
     
     a09 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m09=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f09=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r09=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a10 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m10=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f10=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r10=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
     
     a11 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m11=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f11=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r11=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a12 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m12=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f12=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r12=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
     
     a13 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m13=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f13=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r13=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a14 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m14=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f14=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r14=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
     
     a15 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m15=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f15=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r15=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a16 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m16=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f16=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r16=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
     
     a17 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m17=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f17=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r17=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a18 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m18=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f18=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r18=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
     
     a19 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m19=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f19=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r19=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
     
     a20 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m20=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
     f20=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r20=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
+    
+    a21 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
+    m21=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
+    f21=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r21=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
+    
+    a22 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
+    m22=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
+    f22=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r22=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
+    
+    a23 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
+    m23=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
+    f23=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r23=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
+    
+    a24 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
+    m24=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
+    f24=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r24=FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
+    
+    a25 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
+    m25=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
+    f25=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+    r25=FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
+
+    h01=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h02=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h03=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h04=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h05=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h06=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h07=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h08=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h09=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h10=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h11=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h12=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h13=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h14=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h15=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h16=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h17=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h18=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h19=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h20=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h21=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h22=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h23=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h24=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+    h25=EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                name="",description="Wall visibility")
+
 
 
     #-----------------------------------------------------
@@ -201,10 +481,12 @@ class ROOM(bpy.types.Operator):
     #-----------------------------------------------------
     def draw(self, context):
         layout = self.layout
-        box=layout.row()
-        box.prop(self,'room_height')
-        box.prop(self,'wall_width')
-        box.prop(self,'inverse')
+        row=layout.row()
+        row.prop(self,"reset")
+        row=layout.row()
+        row.prop(self,'room_height')
+        row.prop(self,'wall_width')
+        row.prop(self,'inverse')
     
         row=layout.row()
         row.prop(self,'ceiling')
@@ -212,6 +494,7 @@ class ROOM(bpy.types.Operator):
         row.prop(self,'merge')
                 
         box=layout.box()
+        # Wall number
         box.prop(self,'wall_num')
         if (self.wall_num >= 1): add_wall(self,context,box,self.a01,'01')
         if (self.wall_num >= 2): add_wall(self,context,box,self.a02,'02')
@@ -233,6 +516,11 @@ class ROOM(bpy.types.Operator):
         if (self.wall_num >= 18): add_wall(self,context,box,self.a18,'18')
         if (self.wall_num >= 19): add_wall(self,context,box,self.a19,'19')
         if (self.wall_num >= 20): add_wall(self,context,box,self.a20,'20')
+        if (self.wall_num >= 21): add_wall(self,context,box,self.a21,'21')
+        if (self.wall_num >= 22): add_wall(self,context,box,self.a22,'22')
+        if (self.wall_num >= 23): add_wall(self,context,box,self.a23,'23')
+        if (self.wall_num >= 24): add_wall(self,context,box,self.a24,'24')
+        if (self.wall_num >= 25): add_wall(self,context,box,self.a25,'25')
         
         
         box=layout.box()
@@ -249,9 +537,17 @@ class ROOM(bpy.types.Operator):
     # Execute
     #-----------------------------------------------------
     def execute(self, context):
-        room_maker.create_mesh(self,context)
-        return {'FINISHED'}
-    
+        if (bpy.context.mode == "OBJECT"):
+            if (self.reset == '1'):
+                reset_room(self)
+            
+            
+            room_maker.create_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
+
 #-----------------------------------------------------
 # Add wall parameters
 #-----------------------------------------------------
@@ -261,6 +557,8 @@ def add_wall(self,context,box,var,num):
     row.prop(self,'a' + num)
     if (var == True):
         srow = row.row()
+        srow.prop(self,'r' + num)
+        srow.prop(self,'h' + num)
         srow.prop(self,'m' + num)
         srow.prop(self,'f' + num)
  
@@ -338,9 +636,13 @@ class ROOF(bpy.types.Operator):
     # Execute
     #-----------------------------------------------------
     def execute(self, context):
-        roof_maker.create_mesh(self,context)
-        return {'FINISHED'}
-    
+        if (bpy.context.mode == "OBJECT"):
+            roof_maker.create_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
+
 #------------------------------------------------------------------
 # Define UI class
 # Doors
@@ -388,10 +690,12 @@ class DOOR(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         box=layout.box()
-        box.prop(self,'frame_width')
-        box.prop(self,'frame_height')
-        box.prop(self,'frame_thick')
-        box.prop(self,'frame_size')
+        row=box.row()
+        row.prop(self,'frame_width')
+        row.prop(self,'frame_height')
+        row=box.row()
+        row.prop(self,'frame_thick')
+        row.prop(self,'frame_size')
         
         box=layout.box()
         row=box.row()
@@ -409,8 +713,13 @@ class DOOR(bpy.types.Operator):
     # Execute
     #-----------------------------------------------------
     def execute(self, context):
-        door_maker.create_mesh(self,context)
-        return {'FINISHED'}
+        if (bpy.context.mode == "OBJECT"):
+            door_maker.create_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
+
     
 #------------------------------------------------------------------
 # Define UI class
@@ -431,6 +740,8 @@ class COLUMN(bpy.types.Operator):
     
     rad_top = FloatProperty(name='Top radius',min=0.001,max= 10, default= 0.15,precision=3, description='Radius of the column in the top')
     rad_mid = FloatProperty(name='Middle radius',min=0.001,max= 10, default= 0.15,precision=3, description='Radius of the column in the middle')
+    shift=FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+
     rad_bottom = FloatProperty(name='Bottom radius',min=0.001,max= 10, default= 0.15,precision=3, description='Radius of the column in the bottom')
     
     col_height = FloatProperty(name='Total height',min=0.001,max= 10, default= 2.4,precision=3, description='Total height of column, including bases and tops')
@@ -463,9 +774,11 @@ class COLUMN(bpy.types.Operator):
     crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
     crt_array = bpy.props.BoolProperty(name = "Create array of elements",description="Create a modifier array for all elemnst.",default = False)
     array_num_x = IntProperty(name='Count X',min=0,max= 100, default= 3, description='Number of elements in array')
-    array_space_x = FloatProperty(name='Distance X',min=0.001,max= 10, default= 1,precision=3, description='Distance between elements (only arc disabled)')
+    array_space_x = FloatProperty(name='Distance X',min=0.000,max= 10, default= 1,precision=3, description='Distance between elements (only arc disabled)')
     array_num_y = IntProperty(name='Count Y',min=0,max= 100, default= 0, description='Number of elements in array')
-    array_space_y = FloatProperty(name='Distance Y',min=0.001,max= 10, default= 1,precision=3, description='Distance between elements (only arc disabled)')
+    array_space_y = FloatProperty(name='Distance Y',min=0.000,max= 10, default= 1,precision=3, description='Distance between elements (only arc disabled)')
+    array_space_z = FloatProperty(name='Distance Z',min=-10,max= 10, default= 0,precision=3, description='Combined X/Z distance between elements (only arc disabled)')
+    ramp = bpy.props.BoolProperty(name = "Deform",description="Deform top base with Z displacement.",default = True)
     array_space_factor = FloatProperty(name='Move Y center',min=0.00,max= 1, default= 0.0,precision=3, description='Move the center of the arch in Y axis. (0 centered)')
 
     
@@ -481,7 +794,9 @@ class COLUMN(bpy.types.Operator):
             box.prop(self,'keep_size')
             box.prop(self,'rad_top')
             if (self.keep_size == False):
-                box.prop(self,'rad_mid')
+                row = box.row()
+                row.prop(self,'rad_mid')
+                row.prop(self,'shift')
                 box.prop(self,'rad_bottom')
                 
         # Rectangular
@@ -494,36 +809,42 @@ class COLUMN(bpy.types.Operator):
         box=layout.box()
         box.prop(self,'box_base')
         if (self.box_base == True):
-            box.prop(self,'box_base_x')
-            box.prop(self,'box_base_y')
-            box.prop(self,'box_base_z')
+            row=box.row()
+            row.prop(self,'box_base_x')
+            row.prop(self,'box_base_y')
+            row.prop(self,'box_base_z')
             
         box=layout.box()
         box.prop(self,'box_top')
         if (self.box_top == True):
-            box.prop(self,'box_top_x')
-            box.prop(self,'box_top_y')
-            box.prop(self,'box_top_z')
+            row=box.row()
+            row.prop(self,'box_top_x')
+            row.prop(self,'box_top_y')
+            row.prop(self,'box_top_z')
             
         box=layout.box()
         box.prop(self,'cir_base')
         if (self.cir_base == True):
-            box.prop(self,'cir_base_r')
-            box.prop(self,'cir_base_z')
+            row=box.row()
+            row.prop(self,'cir_base_r')
+            row.prop(self,'cir_base_z')
             
         box=layout.box()
         box.prop(self,'cir_top')
         if (self.cir_top == True):
-            box.prop(self,'cir_top_r')
-            box.prop(self,'cir_top_z')
+            row=box.row()
+            row.prop(self,'cir_top_r')
+            row.prop(self,'cir_top_z')
              
         box = layout.box()
         box.prop(self,'arc_top')
         if (self.arc_top == True):
-            box.prop(self,'arc_radio')
-            box.prop(self,'arc_gap')
-            box.prop(self,'arc_width')
-            box.prop(self,'array_space_factor')
+            row=box.row()
+            row.prop(self,'arc_radio')
+            row.prop(self,'arc_width')
+            row=box.row()
+            row.prop(self,'arc_gap')
+            row.prop(self,'array_space_factor')
         
         box = layout.box()
         box.prop(self,'crt_array')
@@ -535,8 +856,12 @@ class COLUMN(bpy.types.Operator):
                 box.label("Use arch radio and thickness to set distances")
               
             if (self.arc_top == False):
+                row = box.row()
                 row.prop(self,'array_space_x')
                 row.prop(self,'array_space_y')
+                row = box.row()
+                row.prop(self,'array_space_z')
+                row.prop(self,'ramp')
                 
         box = layout.box()
         box.prop(self,'crt_mat')
@@ -544,8 +869,12 @@ class COLUMN(bpy.types.Operator):
     # Execute
     #-----------------------------------------------------
     def execute(self, context):
-        column_maker.create_mesh(self,context)
-        return {'FINISHED'}
+        if (bpy.context.mode == "OBJECT"):
+            column_maker.create_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
 
 #------------------------------------------------------------------
 # Define UI class
@@ -620,8 +949,12 @@ class STAIRS(bpy.types.Operator):
     # Execute
     #-----------------------------------------------------
     def execute(self, context):
-        stairs_maker.create_mesh(self,context)
-        return {'FINISHED'}
+        if (bpy.context.mode == "OBJECT"):
+            stairs_maker.create_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
         
 #----------------------------------------------------------
 # Registration
