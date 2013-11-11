@@ -20,7 +20,7 @@
 bl_info = {
     "name": "Turnaround camera around object",
     "author": "Antonio Vazquez (antonioya)",
-    "version": (0, 1),
+    "version": (0, 2),
     "blender": (2, 68, 0),
     "location": "View3D > Toolshelf > Turnaround camera",
     "description": "Add a camera rotation around selected object.",
@@ -87,6 +87,12 @@ class RunAction(bpy.types.Operator):
         myEmpty.empty_draw_size = 0.1
         bpy.context.scene.frame_set(scene.frame_start)
         myEmpty.keyframe_insert(data_path='rotation_euler', frame=(scene.frame_start))
+        # Dolly zoom
+        if (scene.dolly_zoom  != "0"):
+            bpy.data.cameras[camera.name].lens=scene.camera_from_lens
+            bpy.data.cameras[camera.name].keyframe_insert('lens',frame=(scene.frame_start))
+        
+        
         # Calculate rotation XYZ
         if (scene.inverse_x):
             iX = -1
@@ -115,10 +121,26 @@ class RunAction(bpy.types.Operator):
             xRot = xRot * -1
             yRot = yRot * -1
             zRot = 0
+            
+        # Dolly zoom
+        if (scene.dolly_zoom  == "2"):
+            bpy.data.cameras[camera.name].lens=scene.camera_to_lens
+            bpy.data.cameras[camera.name].keyframe_insert('lens',frame=((scene.frame_end - scene.frame_start) / 2))
+            
         
         # create last frame
         myEmpty.rotation_euler = (xRot,yRot,zRot)
         myEmpty.keyframe_insert(data_path='rotation_euler', frame=(scene.frame_end))
+        # Dolly zoom
+        if (scene.dolly_zoom  != "0"):
+            if (scene.dolly_zoom  == "1"):
+                bpy.data.cameras[camera.name].lens=scene.camera_to_lens # final
+            else:
+                bpy.data.cameras[camera.name].lens=scene.camera_from_lens # back to init
+                
+            bpy.data.cameras[camera.name].keyframe_insert('lens',frame=scene.frame_end)
+
+
         
         # back previous configuration
         context.user_preferences.edit.keyframe_new_interpolation_type = savedInterpolation    
@@ -170,6 +192,13 @@ class PanelUI(bpy.types.Panel):
                 row.prop(scene,"inverse_z")
                 row = layout.row()
                 row.prop(scene,"back_forw")
+                row = layout.row()
+                row.prop(scene,"dolly_zoom")
+                if (scene.dolly_zoom != "0"):
+                    row = layout.row()
+                    row.prop(scene,"camera_from_lens")
+                    row.prop(scene,"camera_to_lens")
+                    
             else:
                 buf = "No valid object selected"
                 layout.label(buf, icon='MESH_DATA')
@@ -198,6 +227,15 @@ def register():
     bpy.types.Scene.use_cursor = bpy.props.BoolProperty(name = "Use cursor position",description="Use cursor position instead of object origin",default = False)
     bpy.types.Scene.back_forw = bpy.props.BoolProperty(name = "Back and forward",description="Create back and forward animation",default = False)
 
+    bpy.types.Scene.dolly_zoom = bpy.props.EnumProperty(items = (('0',"None",""),('1',"Dolly zoom",""),('2',"Dolly zoom B/F","")),
+                                name="Lens Effects",description="Create a camera lens movement")
+
+
+    
+    bpy.types.Scene.camera_from_lens = bpy.props.FloatProperty(name='From',min=1,max= 500,default= 35,precision=3
+                                                  ,description='Start lens value')
+    bpy.types.Scene.camera_to_lens = bpy.props.FloatProperty(name='To',min=1,max= 500,default= 35,precision=3
+                                                  ,description='End lens value')
     
 
 def unregister():
@@ -211,7 +249,9 @@ def unregister():
     del bpy.types.Scene.inverse_y
     del bpy.types.Scene.inverse_z
     del bpy.types.Scene.use_cursor
-    del bpy.types.Scene.back_forw
+    del bpy.types.Scene.dolly_zoom
+    del bpy.types.Scene.camera_from_lens
+    del bpy.types.Scene.camera_to_lens
 
 if __name__ == "__main__":
     register()
