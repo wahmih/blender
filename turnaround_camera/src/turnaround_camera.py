@@ -20,7 +20,7 @@
 bl_info = {
     "name": "Turnaround camera around object",
     "author": "Antonio Vazquez (antonioya)",
-    "version": (0, 2),
+    "version": (0, 2, 1),
     "blender": (2, 68, 0),
     "location": "View3D > Toolshelf > Turnaround camera",
     "description": "Add a camera rotation around selected object.",
@@ -249,6 +249,7 @@ def unregister():
     del bpy.types.Scene.inverse_y
     del bpy.types.Scene.inverse_z
     del bpy.types.Scene.use_cursor
+    del bpy.types.Scene.back_forw
     del bpy.types.Scene.dolly_zoom
     del bpy.types.Scene.camera_from_lens
     del bpy.types.Scene.camera_to_lens
