@@ -139,6 +139,11 @@ class RunAction(bpy.types.Operator):
                 bpy.data.cameras[camera.name].lens=scene.camera_from_lens # back to init
                 
             bpy.data.cameras[camera.name].keyframe_insert('lens',frame=scene.frame_end)
+        bpy.context.scene.objects.active = camera
+        bpy.ops.object.constraint_add(type='TRACK_TO')
+        bpy.context.object.constraints[-1].track_axis = 'TRACK_NEGATIVE_Z'
+        bpy.context.object.constraints[-1].up_axis = 'UP_Y'
+        bpy.context.object.constraints[-1].target = bpy.data.objects[myEmpty.name]
 
 
         
