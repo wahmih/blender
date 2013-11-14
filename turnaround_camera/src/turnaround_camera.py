@@ -20,7 +20,7 @@
 bl_info = {
     "name": "Turnaround camera around object",
     "author": "Antonio Vazquez (antonioya)",
-    "version": (0, 2, 1),
+    "version": (0, 2, 2),
     "blender": (2, 68, 0),
     "location": "View3D > Toolshelf > Turnaround camera",
     "description": "Add a camera rotation around selected object.",
@@ -139,11 +139,14 @@ class RunAction(bpy.types.Operator):
                 bpy.data.cameras[camera.name].lens=scene.camera_from_lens # back to init
                 
             bpy.data.cameras[camera.name].keyframe_insert('lens',frame=scene.frame_end)
-        bpy.context.scene.objects.active = camera
-        bpy.ops.object.constraint_add(type='TRACK_TO')
-        bpy.context.object.constraints[-1].track_axis = 'TRACK_NEGATIVE_Z'
-        bpy.context.object.constraints[-1].up_axis = 'UP_Y'
-        bpy.context.object.constraints[-1].target = bpy.data.objects[myEmpty.name]
+            
+        # Track constraint   
+        if (scene.track == True): 
+            bpy.context.scene.objects.active = camera
+            bpy.ops.object.constraint_add(type='TRACK_TO')
+            bpy.context.object.constraints[-1].track_axis = 'TRACK_NEGATIVE_Z'
+            bpy.context.object.constraints[-1].up_axis = 'UP_Y'
+            bpy.context.object.constraints[-1].target = bpy.data.objects[myEmpty.name]
 
 
         
@@ -203,6 +206,8 @@ class PanelUI(bpy.types.Panel):
                     row = layout.row()
                     row.prop(scene,"camera_from_lens")
                     row.prop(scene,"camera_to_lens")
+                row = layout.row()
+                row.prop(scene,"track")
                     
             else:
                 buf = "No valid object selected"
@@ -242,6 +247,7 @@ def register():
     bpy.types.Scene.camera_to_lens = bpy.props.FloatProperty(name='To',min=1,max= 500,default= 35,precision=3
                                                   ,description='End lens value')
     
+    bpy.types.Scene.track = bpy.props.BoolProperty(name = "Create track constraint",description="Add a track constraint to the camera",default = False)
 
 def unregister():
     bpy.utils.unregister_class(RunAction)
@@ -258,6 +264,7 @@ def unregister():
     del bpy.types.Scene.dolly_zoom
     del bpy.types.Scene.camera_from_lens
     del bpy.types.Scene.camera_to_lens
+    del bpy.types.Scene.track
 
 if __name__ == "__main__":
     register()
