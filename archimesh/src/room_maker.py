@@ -38,7 +38,7 @@ def create_mesh(self,context):
             o.select = False
     bpy.ops.object.select_all(False)
     # Create room
-    myRoom = create_room(self,context,"Room",self.room_height)
+    myRoom = create_room(self,context,"Room",get_BlendUnits(self.room_height))
     myRoom.select = True
     bpy.context.scene.objects.active = myRoom
     
@@ -46,14 +46,14 @@ def create_mesh(self,context):
     set_normals(myRoom,not self.inverse) # inside/outside
 
     if (self.wall_width > 0.0):
-        set_modifier_solidify(myRoom,self.wall_width)
+        set_modifier_solidify(myRoom,get_BlendUnits(self.wall_width))
         
     # Create baseboard
     if (self.baseboard):
-        myBase = create_room(self,context,"Baseboard",self.base_height,True)
+        myBase = create_room(self,context,"Baseboard",get_BlendUnits(self.base_height),True)
         set_normals(myBase,self.inverse) # inside/outside room
         if (self.base_width > 0.0):
-            set_modifier_solidify(myBase,self.base_width)
+            set_modifier_solidify(myBase,get_BlendUnits(self.base_width))
         myBase.parent = myRoom    
         
     # Create floor
@@ -128,8 +128,8 @@ def create_room(self,context,objName,height,baseboard = False):
     #---------------------------------
     if (self.wall_num >= 1):
         # Calculate size using angle
-        sizeX = math.cos(math.radians(self.r01)) * self.w01
-        sizeY = math.sin(math.radians(self.r01)) * self.w01
+        sizeX = math.cos(math.radians(self.r01)) * get_BlendUnits(self.w01)
+        sizeY = math.sin(math.radians(self.r01)) * get_BlendUnits(self.w01)
 
         if (self.a01 == False or baseboard == True):
             myVertex.extend([(0.0,0.0,0.0),(0.0,0.0,height)
@@ -141,14 +141,14 @@ def create_room(self,context,objName,height,baseboard = False):
             lastX = sizeX
             lastY = sizeY
         else:
-            mid = self.w01 / 2 + ((self.w01 / 2) * self.f01)
+            mid = get_BlendUnits(self.w01 / 2 + ((self.w01 / 2) * self.f01))
             midX = math.cos(math.radians(self.r01)) * mid
             midY = math.sin(math.radians(self.r01)) * mid
             
             # first
             myVertex.extend([(0.0,0.0,0.0)
                              ,(0.0,0.0,height)
-                             ,(midX,midY,height + self.m01)
+                             ,(midX,midY,height + get_BlendUnits(self.m01))
                              ,(midX,midY,0.0)])
             if (math.fabs(self.f01) != 1):
                 if (check_visibility(self.h01,baseboard)):
@@ -466,6 +466,9 @@ def make_wall(prv,advance,size,over,factor,baseboard,lastFace,lastX,lastY,height
     # use add because the angle is negative 
     if (angle < 0):
         angle = 360 + angle
+    # Verify Units    
+    size = get_BlendUnits(size)
+    over = get_BlendUnits(over)
     
     # Calculate size using angle
     sizeX = math.cos(math.radians(angle)) * size
@@ -538,9 +541,10 @@ def create_floor(self,context,typ,myRoom):
                 myVertex.extend([(e[0],e[1],e[2])])
                 i = i + 1    
         else: # ceiling
-            if(e[2] == self.room_height):
+            if(round(e[2],5) == round(get_BlendUnits(self.room_height),5)):
                 myVertex.extend([(e[0],e[1],e[2])])    
                 i = i + 1
+    
     # Create faces
     fa = []
     for f in range(0,i):

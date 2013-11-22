@@ -30,7 +30,7 @@ bl_info = {
     "name": "Archimesh",
     "author": "Antonio Vazquez (antonioya)",
     "location": "View3D > Add > Mesh > Archimesh",
-    "version": (0, 4),
+    "version": (0, 5),
     "blender": (2, 6, 8),
     "description": "Generate rooms, door, roofs, stairs and other architecture stuff automatically.",
     "category": "Add Mesh"}
@@ -256,15 +256,15 @@ class ROOM(bpy.types.Operator):
                                 name="",description="Reset all values to default parameters")
 
     # Define properties
-    room_height=FloatProperty(name='Height',min=0.001,max= 20, default= 2.4,precision=3, description='Room height')
-    wall_width=FloatProperty(name='Thickness',min=0.000,max= 1, default= 0.0,precision=3, description='Thickness of the walls')
+    room_height=FloatProperty(name='Height',min=0.001,max= 50, default= 2.4,precision=3, description='Room height')
+    wall_width=FloatProperty(name='Thickness',min=0.000,max= 10, default= 0.0,precision=3, description='Thickness of the walls')
     inverse = bpy.props.BoolProperty(name = "Inverse",description="Inverse normals to outside.",default = False)
     crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
 
     wall_num=IntProperty(name='Number of Walls',min=1,max= 25, default= 1, description='Number total of walls in the room')
     
     baseboard = bpy.props.BoolProperty(name = "Create baseboard",description="Create a baseboard automatically.",default = True)
-    base_width=FloatProperty(name='Width',min=0.001,max= 0.50, default= 0.015,precision=3, description='Baseboard width')
+    base_width=FloatProperty(name='Width',min=0.001,max= 10, default= 0.015,precision=3, description='Baseboard width')
     base_height=FloatProperty(name='Height',min=0.05,max= 20, default= 0.12,precision=3, description='Baseboard height')
     
     ceiling = bpy.props.BoolProperty(name = "Ceiling",description="Create a ceiling.",default = False)
@@ -272,31 +272,31 @@ class ROOM(bpy.types.Operator):
 
     merge = bpy.props.BoolProperty(name = "Close walls",description="Close walls to create a full closed room.",default = False)
    
-    w01=FloatProperty(name='Wall01 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w02=FloatProperty(name='Wall02 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w03=FloatProperty(name='Wall03 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w04=FloatProperty(name='Wall04 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w05=FloatProperty(name='Wall05 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w06=FloatProperty(name='Wall06 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w07=FloatProperty(name='Wall07 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w08=FloatProperty(name='Wall08 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w09=FloatProperty(name='Wall09 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w10=FloatProperty(name='Wall10 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w11=FloatProperty(name='Wall11 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w12=FloatProperty(name='Wall12 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w13=FloatProperty(name='Wall13 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w14=FloatProperty(name='Wall14 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w15=FloatProperty(name='Wall15 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w16=FloatProperty(name='Wall16 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w17=FloatProperty(name='Wall17 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w18=FloatProperty(name='Wall18 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w19=FloatProperty(name='Wall19 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w20=FloatProperty(name='Wall20 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w21=FloatProperty(name='Wall21 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w22=FloatProperty(name='Wall22 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w23=FloatProperty(name='Wall23 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w24=FloatProperty(name='Wall24 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w25=FloatProperty(name='Wall25 size',min=-50,max= 50, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w01=FloatProperty(name='Wall01 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w02=FloatProperty(name='Wall02 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w03=FloatProperty(name='Wall03 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w04=FloatProperty(name='Wall04 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w05=FloatProperty(name='Wall05 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w06=FloatProperty(name='Wall06 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w07=FloatProperty(name='Wall07 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w08=FloatProperty(name='Wall08 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w09=FloatProperty(name='Wall09 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w10=FloatProperty(name='Wall10 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w11=FloatProperty(name='Wall11 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w12=FloatProperty(name='Wall12 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w13=FloatProperty(name='Wall13 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w14=FloatProperty(name='Wall14 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w15=FloatProperty(name='Wall15 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w16=FloatProperty(name='Wall16 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w17=FloatProperty(name='Wall17 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w18=FloatProperty(name='Wall18 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w19=FloatProperty(name='Wall19 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w20=FloatProperty(name='Wall20 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w21=FloatProperty(name='Wall21 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w22=FloatProperty(name='Wall22 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w23=FloatProperty(name='Wall23 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w24=FloatProperty(name='Wall24 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
+    w25=FloatProperty(name='Wall25 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
     
     a01 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
     m01=FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
@@ -596,6 +596,10 @@ class ROOF(bpy.types.Operator):
     #-----------------------------------------------------
     def draw(self, context):
         layout = self.layout
+        # Imperial units warning
+        if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+            row=layout.row()
+            row.label("Warning: Imperial units not supported")
         box=layout.box()
         box.prop(self,'model')
         box.prop(self,'roof_width')
@@ -689,6 +693,10 @@ class DOOR(bpy.types.Operator):
     #-----------------------------------------------------
     def draw(self, context):
         layout = self.layout
+        # Imperial units warning
+        if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+            row=layout.row()
+            row.label("Warning: Imperial units not supported")
         box=layout.box()
         row=box.row()
         row.prop(self,'frame_width')
@@ -787,6 +795,10 @@ class COLUMN(bpy.types.Operator):
     #-----------------------------------------------------
     def draw(self, context):
         layout = self.layout
+        # Imperial units warning
+        if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+            row=layout.row()
+            row.label("Warning: Imperial units not supported")
         box=layout.box()
         box.prop(self,'model')
         # Circular
@@ -865,6 +877,7 @@ class COLUMN(bpy.types.Operator):
                 
         box = layout.box()
         box.prop(self,'crt_mat')
+        
     #-----------------------------------------------------
     # Execute
     #-----------------------------------------------------
@@ -914,6 +927,11 @@ class STAIRS(bpy.types.Operator):
     #-----------------------------------------------------
     def draw(self, context):
         layout = self.layout
+        # Imperial units warning
+        if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+            row=layout.row()
+            row.label("Warning: Imperial units not supported")
+        
         box=layout.box()
         row = box.row()
         row.prop(self,'model')
@@ -945,6 +963,7 @@ class STAIRS(bpy.types.Operator):
             
         box = layout.box()
         box.prop(self,'crt_mat')
+        
     #-----------------------------------------------------
     # Execute
     #-----------------------------------------------------

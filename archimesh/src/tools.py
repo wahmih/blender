@@ -24,7 +24,15 @@
 #
 #----------------------------------------------------------
 import bpy
-
+#--------------------------------------------------------------------
+# Get length Blender units
+#--------------------------------------------------------------------            
+def get_BlendUnits(units):
+    
+    if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+        return units * 0.3048
+    else:
+        return units
 #--------------------------------------------------------------------
 # Set normals
 # True= faces to inside

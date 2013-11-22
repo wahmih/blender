@@ -76,6 +76,7 @@ def create_mesh(self,context):
         bpy.ops.object.select_all(False)
         myColumn.select = True
         bpy.context.scene.objects.active = myColumn
+        set_normals(myColumn) 
     #------------------------
     # Circular base
     #------------------------
@@ -100,6 +101,7 @@ def create_mesh(self,context):
         box_bottom.select = True
         bpy.context.scene.objects.active = box_bottom
         box_bottom.parent = myColumn
+        set_normals(box_bottom) 
         box_bottom.location.x = 0.0
         box_bottom.location.y = 0.0
         box_bottom.location.z = - self.box_base_z
@@ -129,6 +131,7 @@ def create_mesh(self,context):
         bpy.ops.object.select_all(False)
         box_top.select = True
         bpy.context.scene.objects.active = box_top
+        set_normals(box_top) 
         box_top.parent = myColumn
         box_top.location.x = 0.0
         box_top.location.y = 0.0
