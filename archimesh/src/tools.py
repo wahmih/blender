@@ -205,7 +205,56 @@ def select_faces(myObject,selFace,clear):
         bpy.ops.object.mode_set(mode = 'OBJECT')
         myObject.data.polygons[selFace].select = True
 #        bpy.ops.object.mode_set(mode = 'EDIT')
+#--------------------------------------------------------------------
+# Select vertices
+#--------------------------------------------------------------------            
+def select_vertices(myObject,selVertices,clear = True):
+    myObject.select = True
+    bpy.context.scene.objects.active = myObject
+    if (bpy.context.scene.objects.active.name == myObject.name):
+        # deselect everything
+        if (clear):
+            bpy.ops.object.mode_set(mode = 'EDIT')
+            bpy.ops.mesh.select_all(action = 'DESELECT')
         
+        # Select Vertices 
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        sel_mode = bpy.context.tool_settings.mesh_select_mode
+        
+        bpy.context.tool_settings.mesh_select_mode = [True, False, False]
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+        
+        for i in selVertices:
+            myObject.data.vertices[i].select = True
+    
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.context.tool_settings.mesh_select_mode = sel_mode
+        bpy.ops.object.mode_set(mode = 'OBJECT')
+        
+#--------------------------------------------------------------------
+# Mark Seam
+#--------------------------------------------------------------------            
+def mark_seam(myObject):
+    myObject.select = True
+    bpy.context.scene.objects.active = myObject
+    if (bpy.context.scene.objects.active.name == myObject.name):
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.ops.mesh.mark_seam()
+        bpy.ops.object.mode_set(mode = 'OBJECT')
+
+#--------------------------------------------------------------------
+# Unwrap mesh
+#--------------------------------------------------------------------            
+def unwrap_mesh(myObject):
+    myObject.select = True
+    bpy.context.scene.objects.active = myObject
+    if (bpy.context.scene.objects.active.name == myObject.name):
+        # Unwrap 
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.ops.mesh.select_all(action = 'DESELECT')
+        bpy.ops.mesh.select_all()
+        bpy.ops.uv.unwrap()
+        bpy.ops.object.mode_set(mode = 'OBJECT')
 #--------------------------------------------------------------------
 # Create cycles diffuse material
 #--------------------------------------------------------------------

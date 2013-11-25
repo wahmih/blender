@@ -41,6 +41,11 @@ def create_mesh(self,context):
     myRoom = create_room(self,context,"Room",get_BlendUnits(self.room_height))
     myRoom.select = True
     bpy.context.scene.objects.active = myRoom
+    # Mark Seams
+    select_vertices(myRoom,[0,1])   
+    mark_seam(myRoom) 
+    # Unwrap
+    unwrap_mesh(myRoom)
     
     remove_doubles(myRoom)
     set_normals(myRoom,not self.inverse) # inside/outside
@@ -55,16 +60,25 @@ def create_mesh(self,context):
         if (self.base_width > 0.0):
             set_modifier_solidify(myBase,get_BlendUnits(self.base_width))
         myBase.parent = myRoom    
+        # Mark Seams
+        select_vertices(myBase,[0,1])   
+        mark_seam(myBase) 
+        # Unwrap
+        unwrap_mesh(myBase)
         
     # Create floor
     if (self.floor):
         myFloor = create_floor(self,context,"Floor",myRoom)
         myFloor.parent = myRoom    
+        # Unwrap
+        unwrap_mesh(myFloor)
 
     # Create ceiling
     if (self.ceiling):
         myCeiling = create_floor(self,context,"Ceiling",myRoom)
         myCeiling.parent = myRoom    
+        # Unwrap
+        unwrap_mesh(myCeiling)
 
     # Create materials        
     if (self.crt_mat):
