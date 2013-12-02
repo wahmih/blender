@@ -1,6 +1,8 @@
 Archimesh
 =======
 
+** This addon only works with English Blender version **
+
 Blender addon for creating architecture elements.
 
 - Rooms
