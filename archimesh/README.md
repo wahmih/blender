@@ -9,3 +9,5 @@ Blender addon for creating architecture elements.
 - Stairs
 - Doors
 - Tile roofs
+
+From version 0.6 can create kitchen cabinets
