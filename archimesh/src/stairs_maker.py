@@ -28,11 +28,101 @@ import mathutils
 import math
 from tools import *
 
+#------------------------------------------------------------------
+# Define UI class
+# Stairs
+#------------------------------------------------------------------
+class STAIRS(bpy.types.Operator):
+    bl_idname = "mesh.archimesh_stairs"
+    bl_label = "Stairs"
+    bl_description = "Stairs Generator"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    # Define properties
+    model = bpy.props.EnumProperty(items = (('1',"Rectangular",""),
+                                ('2',"Rounded","")),
+                                name="Model",
+                                description="Type of steps")
+    radio = bpy.props.FloatProperty(name='',min=0.001,max= 0.500, default= 0.20,precision=3, description='Radius factor for rounded')
+    curve = bpy.props.BoolProperty(name = "Include deformation handles",description="Include a curve to modify the stairs curve.",default = False)
+
+    step_num= bpy.props.IntProperty(name='Number of steps',min=1,max= 1000, default= 3, description='Number total of steps')
+    max_width = bpy.props.FloatProperty(name='Width',min=0.001,max= 10, default= 1,precision=3, description='Step maximum width')
+    depth = bpy.props.FloatProperty(name='Depth',min=0.001,max= 10, default= 0.30,precision=3, description='Depth of the step')
+    shift = bpy.props.FloatProperty(name='Shift',min=0.001,max= 1, default= 1,precision=3, description='Step shift in Y axis')
+    thickness = bpy.props.FloatProperty(name='Thickness',min=0.001,max= 10, default= 0.03,precision=3, description='Step thickness')
+    sizev = bpy.props.BoolProperty(name = "Variable width",description="Steps are not equal in width.",default = False)
+    back = bpy.props.BoolProperty(name = "Close sides",description="Close all steps side to make a solid structure.",default = False)
+    min_width = bpy.props.FloatProperty(name='',min=0.001,max= 10, default= 1,precision=3, description='Step minimum width')
+    
+    height = bpy.props.FloatProperty(name='height',min=0.001,max= 10, default= 0.14,precision=3, description='Step height')
+    front_gap = bpy.props.FloatProperty(name='Front',min=0,max= 10, default= 0.03,precision=3, description='Front gap')
+    side_gap = bpy.props.FloatProperty(name='Side',min=0,max= 10, default= 0,precision=3, description='Side gap')
+    crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
+
+    
+    #-----------------------------------------------------
+    # Draw (create UI interface)
+    #-----------------------------------------------------
+    def draw(self, context):
+        layout = self.layout
+        space = bpy.context.space_data
+        if (not space.local_view):
+            # Imperial units warning
+            if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+                row=layout.row()
+                row.label("Warning: Imperial units not supported", icon='COLOR_RED')
+            
+            box=layout.box()
+            row = box.row()
+            row.prop(self,'model')
+            if (self.model == "2"):
+                row.prop(self,'radio')
+            
+            box.prop(self,'step_num')
+            row = box.row()
+            row.prop(self,'max_width')
+            row.prop(self,'depth')
+            row.prop(self,'shift')
+            row = box.row()
+            row.prop(self,'back')
+            row.prop(self,'sizev')
+            row = box.row()
+            row.prop(self,'curve')
+            # all equal
+            if (self.sizev == True):
+                row.prop(self,'min_width')
+                
+            box=layout.box()
+            row = box.row()
+            row.prop(self,'thickness')
+            row.prop(self,'height')
+            row = box.row()
+            row.prop(self,'front_gap')
+            if (self.model == "1"):
+                row.prop(self,'side_gap')
+                
+            box = layout.box()
+            box.prop(self,'crt_mat')
+        else:
+            row=layout.row()
+            row.label("Warning: Operator does not work in local view mode", icon='ERROR')
+        
+    #-----------------------------------------------------
+    # Execute
+    #-----------------------------------------------------
+    def execute(self, context):
+        if (bpy.context.mode == "OBJECT"):
+            create_stairs_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
 #------------------------------------------------------------------------------
 # Generate mesh data
 # All custom values are passed using self container (self.myvariable)
 #------------------------------------------------------------------------------
-def create_mesh(self,context):
+def create_stairs_mesh(self,context):
 
     # deactivate others
     for o in bpy.data.objects:

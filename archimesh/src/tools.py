@@ -24,6 +24,8 @@
 #
 #----------------------------------------------------------
 import bpy
+import os
+
 #--------------------------------------------------------------------
 # Get length Blender units
 #--------------------------------------------------------------------            
@@ -245,14 +247,15 @@ def mark_seam(myObject):
 #--------------------------------------------------------------------
 # Unwrap mesh
 #--------------------------------------------------------------------            
-def unwrap_mesh(myObject):
+def unwrap_mesh(myObject, allfaces = True):
     myObject.select = True
     bpy.context.scene.objects.active = myObject
     if (bpy.context.scene.objects.active.name == myObject.name):
         # Unwrap 
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.ops.mesh.select_all(action = 'DESELECT')
-        bpy.ops.mesh.select_all()
+        if (allfaces == True):
+            bpy.ops.mesh.select_all(action = 'DESELECT')
+            bpy.ops.mesh.select_all()
         bpy.ops.uv.unwrap()
         bpy.ops.object.mode_set(mode = 'OBJECT')
 #--------------------------------------------------------------------
@@ -343,6 +346,59 @@ def create_diffuse_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.8,mi
     return mat
 
 #--------------------------------------------------------------------
+# Create cycles translucent material
+#--------------------------------------------------------------------
+def create_translucent_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.8,mix = 0.1):
+    
+    # Avoid duplicate materials
+    if (replace == False):
+        matlist = bpy.data.materials
+        for m in matlist:
+            if (m.name == matName):
+                return m
+    # Create material
+    scn = bpy.context.scene
+    # Set cycles render engine if not selected
+    if not scn.render.engine == 'CYCLES':
+        scn.render.engine = 'CYCLES'
+ 
+    mat = bpy.data.materials.new(matName)
+    mat.diffuse_color = (rv,gv,bv) # viewport color
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+ 
+    node = nodes['Diffuse BSDF']
+    node.inputs[0].default_value = [r, g, b, 1]
+    node.location = 200, 320
+    
+    node = nodes.new('ShaderNodeBsdfTranslucent')
+    node.name = 'Translucent_0'
+    node.location = 200, 0
+
+    node = nodes.new('ShaderNodeMixShader')
+    node.name = 'Mix_0'
+    node.inputs[0].default_value = mix
+    node.location = 500, 160
+    
+    node = nodes['Material Output']
+    node.location = 1100, 160
+
+    # Connect nodes
+    outN = nodes['Diffuse BSDF'].outputs[0]
+    inN = nodes['Mix_0'].inputs[1]
+    mat.node_tree.links.new(outN, inN)   
+    
+    outN = nodes['Translucent_0'].outputs[0]
+    inN = nodes['Mix_0'].inputs[2]
+    mat.node_tree.links.new(outN, inN)   
+
+    outN = nodes['Mix_0'].outputs[0]
+    inN = nodes['Material Output'].inputs[0]
+    mat.node_tree.links.new(outN, inN)
+
+    return mat
+
+#--------------------------------------------------------------------
 # Create cycles glossy material
 #--------------------------------------------------------------------
 def create_glossy_material(matName, replace, r, g, b,rv = 0.578, gv = 0.555, bv = 0.736):
@@ -377,6 +433,46 @@ def create_glossy_material(matName, replace, r, g, b,rv = 0.578, gv = 0.555, bv 
     
     # Connect nodes
     outN = nodes['Glossy_0'].outputs[0]
+    inN = nodes['Material Output'].inputs[0]
+    mat.node_tree.links.new(outN, inN)
+       
+    return mat
+
+#--------------------------------------------------------------------
+# Create cycles emission material
+#--------------------------------------------------------------------
+def create_emission_material(matName, replace, r, g, b,energy):
+    
+    # Avoid duplicate materials
+    if (replace == False):
+        matlist = bpy.data.materials
+        for m in matlist:
+            if (m.name == matName):
+                return m
+    # Create material
+    scn = bpy.context.scene
+    # Set cycles render engine if not selected
+    if not scn.render.engine == 'CYCLES':
+        scn.render.engine = 'CYCLES'
+ 
+    mat = bpy.data.materials.new(matName)
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+ 
+    node = nodes['Diffuse BSDF']
+    mat.node_tree.nodes.remove(node) # remove not used
+    
+    node = nodes.new('ShaderNodeEmission')
+    node.name = 'Emission_0'
+    node.inputs[0].default_value = [r, g, b, 1]
+    node.inputs[1].default_value = energy
+    node.location = 200, 160
+
+    node = nodes['Material Output']
+    node.location = 700, 160
+    
+    # Connect nodes
+    outN = nodes['Emission_0'].outputs[0]
     inN = nodes['Material Output'].inputs[0]
     mat.node_tree.links.new(outN, inN)
        
@@ -515,3 +611,113 @@ def create_brick_material(matName, replace, r, g, b, rv = 0.8, gv = 0.636, bv = 
     mat.node_tree.links.new(outN, inN)     
     
     return mat             
+#--------------------------------------------------------------------
+# Create cycles fabric texture material
+#--------------------------------------------------------------------
+def create_fabric_material(matName, replace, r, g, b, rv = 0.8, gv = 0.636, bv = 0.315):
+    
+    # Avoid duplicate materials
+    if (replace == False):
+        matlist = bpy.data.materials
+        for m in matlist:
+            if (m.name == matName):
+                return m
+    # Create material
+    scn = bpy.context.scene
+    # Set cycles render engine if not selected
+    if not scn.render.engine == 'CYCLES':
+        scn.render.engine = 'CYCLES'
+ 
+    mat = bpy.data.materials.new(matName)
+    mat.use_nodes = True
+    mat.diffuse_color = (rv, gv, bv)
+    nodes = mat.node_tree.nodes
+ 
+    node = nodes['Diffuse BSDF']
+    node.inputs[0].default_value = [r, g, b, 1]
+    node.location = 810, 270
+    
+    node = nodes['Material Output']
+    node.location = 1210, 320
+    
+    node = nodes.new('ShaderNodeTexCoord')
+    node.name = 'UVCoordinates'
+    node.location = 26, 395
+
+    
+    node = nodes.new('ShaderNodeMapping')
+    node.name = 'UVMapping'
+    node.location = 266, 380
+    node.scale[0] = 1000
+    node.scale[1] = 1000
+    node.scale[2] = 1000
+
+    #===========================================================================
+    # Image texture 
+    #===========================================================================
+    # Load image file.
+    
+    realpath = os.path.join(os.path.dirname(__file__), "images","fabric_diffuse.png")
+    print("Loading: " + realpath)
+    try:
+        img = bpy.data.images.load(realpath)
+    except:
+        raise NameError("Cannot load image %s" % realpath)
+ 
+    # Create image texture from image
+    cTex = bpy.data.textures.new('ColorTex', type = 'IMAGE')
+    cTex.image = img
+ 
+    node = nodes.new('ShaderNodeTexImage')
+    node.name = 'Image1'
+    node.image = cTex.image
+    node.location = 615, 350
+
+    node = nodes.new('ShaderNodeBsdfTransparent')
+    node.name = 'Transparent1'
+    node.location = 810, 395
+    node.inputs[0].default_value = [r, g, b, 1]
+
+    node = nodes.new('ShaderNodeAddShader')
+    node.name = 'Add1'
+    node.location = 1040, 356
+
+    
+    # Connect nodes
+    outN = nodes['UVCoordinates'].outputs['UV']
+    inN = nodes['UVMapping'].inputs['Vector']
+    mat.node_tree.links.new(outN, inN)   
+      
+    outN = nodes['UVMapping'].outputs['Vector']
+    inN = nodes['Image1'].inputs['Vector']
+    mat.node_tree.links.new(outN, inN)   
+
+    outN = nodes['Image1'].outputs['Color']
+    inN = nodes['Diffuse BSDF'].inputs['Color']
+    mat.node_tree.links.new(outN, inN)   
+
+    outN = nodes['Transparent1'].outputs['BSDF']
+    inN = nodes['Add1'].inputs[0]
+    mat.node_tree.links.new(outN, inN)   
+
+    outN = nodes['Diffuse BSDF'].outputs['BSDF']
+    inN = nodes['Add1'].inputs[1]
+    mat.node_tree.links.new(outN, inN)   
+      
+    outN = nodes['Add1'].outputs['Shader']
+    inN = nodes['Material Output'].inputs[0]
+    mat.node_tree.links.new(outN, inN)     
+    
+    return mat             
+#--------------------------------------------------------------------
+# Copy bin file
+#--------------------------------------------------------------------
+def copy_binfile(fromfile, tofile):
+    with open(fromfile,'rb') as f1:
+        with open(tofile,'wb') as f2:
+            while True:
+                myBytes=f1.read(1024)
+                if myBytes: 
+                    n=f2.write(myBytes)
+                else:
+                    break    

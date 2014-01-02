@@ -12,4 +12,18 @@ Blender addon for creating architecture elements.
 - Doors
 - Tile roofs
 
-From version 0.6 can create kitchen cabinets
+Changes in version 0.6
+=============================
+Kitchen cabinets
+
+Changes in version 0.7
+=============================
+Shelves
+Windows
+Japanese curtains
+Roller curtains
+Venetian blind
+Books
+Lamps
+
+The source code has been reorganized and some parameters have been moved from init.py

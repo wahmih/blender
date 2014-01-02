@@ -28,11 +28,176 @@ import mathutils
 import math
 from tools import *
 
+#------------------------------------------------------------------
+# Define UI class
+# Columns
+#------------------------------------------------------------------
+class COLUMN(bpy.types.Operator):
+    bl_idname = "mesh.archimesh_column"
+    bl_label = "Column"
+    bl_description = "Columns Generator"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    # Define properties
+    model = bpy.props.EnumProperty(items = (('1',"Circular",""),
+                                ('2',"Rectangular","")),
+                                name="Model",
+                                description="Type of column")
+    keep_size = bpy.props.BoolProperty(name = "Keep radius equal",description="Keep all radius (top, mid and bottom) to the same size.",default = True)
+    
+    rad_top = bpy.props.FloatProperty(name='Top radius',min=0.001,max= 10, default= 0.15,precision=3, description='Radius of the column in the top')
+    rad_mid = bpy.props.FloatProperty(name='Middle radius',min=0.001,max= 10, default= 0.15,precision=3, description='Radius of the column in the middle')
+    shift= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
+
+    rad_bottom = bpy.props.FloatProperty(name='Bottom radius',min=0.001,max= 10, default= 0.15,precision=3, description='Radius of the column in the bottom')
+    
+    col_height = bpy.props.FloatProperty(name='Total height',min=0.001,max= 10, default= 2.4,precision=3, description='Total height of column, including bases and tops')
+    col_sx = bpy.props.FloatProperty(name='X size',min=0.001,max= 10, default= 0.30,precision=3, description='Column size for x axis')
+    col_sy = bpy.props.FloatProperty(name='Y size',min=0.001,max= 10, default= 0.30,precision=3, description='Column size for y axis')
+    
+    cir_base = bpy.props.BoolProperty(name = "Include circular base",description="Include a base with circular form.",default = False)
+    cir_base_r = bpy.props.FloatProperty(name='Radio',min=0.001,max= 10, default= 0.08,precision=3, description='Rise up radio of base')
+    cir_base_z = bpy.props.FloatProperty(name='Height',min=0.001,max= 10, default= 0.05,precision=3, description='Size for z axis')
+    
+    cir_top = bpy.props.BoolProperty(name = "Include circular top",description="Include a top with circular form.",default = False)
+    cir_top_r = bpy.props.FloatProperty(name='Radio',min=0.001,max= 10, default= 0.08,precision=3, description='Rise up radio of top')
+    cir_top_z = bpy.props.FloatProperty(name='Height',min=0.001,max= 10, default= 0.05,precision=3, description='Size for z axis')
+    
+    box_base = bpy.props.BoolProperty(name = "Include rectangular base",description="Include a base with rectangular form.",default = True)
+    box_base_x = bpy.props.FloatProperty(name='X size',min=0.001,max= 10, default= 0.40,precision=3, description='Size for x axis')
+    box_base_y = bpy.props.FloatProperty(name='Y size',min=0.001,max= 10, default= 0.40,precision=3, description='Size for y axis')
+    box_base_z = bpy.props.FloatProperty(name='Height',min=0.001,max= 10, default= 0.05,precision=3, description='Size for z axis')
+    
+    box_top = bpy.props.BoolProperty(name = "Include rectangular top",description="Include a top with rectangular form.",default = True)
+    box_top_x = bpy.props.FloatProperty(name='X size',min=0.001,max= 10, default= 0.40,precision=3, description='Size for x axis')
+    box_top_y = bpy.props.FloatProperty(name='Y size',min=0.001,max= 10, default= 0.40,precision=3, description='Size for y axis')
+    box_top_z = bpy.props.FloatProperty(name='Height',min=0.001,max= 10, default= 0.05,precision=3, description='Size for z axis')
+
+    arc_top = bpy.props.BoolProperty(name = "Create top arch",description="Include an arch in the top of the column.",default = False)
+    arc_radio = bpy.props.FloatProperty(name='Arc Radio',min=0.001,max= 10, default= 1,precision=1, description='Radio of the arch')
+    arc_width = bpy.props.FloatProperty(name='Thickness',min=0.01,max= 10, default= 0.15,precision=2, description='Thickness of the arch wall')
+    arc_gap = bpy.props.FloatProperty(name='Arc gap',min=0.01,max= 10, default= 0.25,precision=2, description='Size of the gap in the arch sides')
+    
+    crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
+    crt_array = bpy.props.BoolProperty(name = "Create array of elements",description="Create a modifier array for all elemnst.",default = False)
+    array_num_x = bpy.props.IntProperty(name='Count X',min=0,max= 100, default= 3, description='Number of elements in array')
+    array_space_x = bpy.props.FloatProperty(name='Distance X',min=0.000,max= 10, default= 1,precision=3, description='Distance between elements (only arc disabled)')
+    array_num_y = bpy.props.IntProperty(name='Count Y',min=0,max= 100, default= 0, description='Number of elements in array')
+    array_space_y = bpy.props.FloatProperty(name='Distance Y',min=0.000,max= 10, default= 1,precision=3, description='Distance between elements (only arc disabled)')
+    array_space_z = bpy.props.FloatProperty(name='Distance Z',min=-10,max= 10, default= 0,precision=3, description='Combined X/Z distance between elements (only arc disabled)')
+    ramp = bpy.props.BoolProperty(name = "Deform",description="Deform top base with Z displacement.",default = True)
+    array_space_factor = bpy.props.FloatProperty(name='Move Y center',min=0.00,max= 1, default= 0.0,precision=3, description='Move the center of the arch in Y axis. (0 centered)')
+
+    
+    #-----------------------------------------------------
+    # Draw (create UI interface)
+    #-----------------------------------------------------
+    def draw(self, context):
+        layout = self.layout
+        space = bpy.context.space_data
+        if (not space.local_view):
+            # Imperial units warning
+            if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+                row=layout.row()
+                row.label("Warning: Imperial units not supported", icon='COLOR_RED')
+            box=layout.box()
+            box.prop(self,'model')
+            # Circular
+            if (self.model == "1"):
+                box.prop(self,'keep_size')
+                box.prop(self,'rad_top')
+                if (self.keep_size == False):
+                    row = box.row()
+                    row.prop(self,'rad_mid')
+                    row.prop(self,'shift')
+                    box.prop(self,'rad_bottom')
+                    
+            # Rectangular
+            if (self.model == "2"):
+                box.prop(self,'col_sx')
+                box.prop(self,'col_sy')
+                
+            box.prop(self,'col_height')
+                
+            box=layout.box()
+            box.prop(self,'box_base')
+            if (self.box_base == True):
+                row=box.row()
+                row.prop(self,'box_base_x')
+                row.prop(self,'box_base_y')
+                row.prop(self,'box_base_z')
+                
+            box=layout.box()
+            box.prop(self,'box_top')
+            if (self.box_top == True):
+                row=box.row()
+                row.prop(self,'box_top_x')
+                row.prop(self,'box_top_y')
+                row.prop(self,'box_top_z')
+                
+            box=layout.box()
+            box.prop(self,'cir_base')
+            if (self.cir_base == True):
+                row=box.row()
+                row.prop(self,'cir_base_r')
+                row.prop(self,'cir_base_z')
+                
+            box=layout.box()
+            box.prop(self,'cir_top')
+            if (self.cir_top == True):
+                row=box.row()
+                row.prop(self,'cir_top_r')
+                row.prop(self,'cir_top_z')
+                 
+            box = layout.box()
+            box.prop(self,'arc_top')
+            if (self.arc_top == True):
+                row=box.row()
+                row.prop(self,'arc_radio')
+                row.prop(self,'arc_width')
+                row=box.row()
+                row.prop(self,'arc_gap')
+                row.prop(self,'array_space_factor')
+            
+            box = layout.box()
+            box.prop(self,'crt_array')
+            if (self.crt_array == True):
+                row = box.row()
+                row.prop(self,'array_num_x')
+                row.prop(self,'array_num_y')
+                if (self.arc_top == True):        
+                    box.label("Use arch radio and thickness to set distances")
+                  
+                if (self.arc_top == False):
+                    row = box.row()
+                    row.prop(self,'array_space_x')
+                    row.prop(self,'array_space_y')
+                    row = box.row()
+                    row.prop(self,'array_space_z')
+                    row.prop(self,'ramp')
+                    
+            box = layout.box()
+            box.prop(self,'crt_mat')
+        else:
+            row=layout.row()
+            row.label("Warning: Operator does not work in local view mode", icon='ERROR')
+        
+    #-----------------------------------------------------
+    # Execute
+    #-----------------------------------------------------
+    def execute(self, context):
+        if (bpy.context.mode == "OBJECT"):
+            create_column_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
+
 #------------------------------------------------------------------------------
 # Generate mesh data
 # All custom values are passed using self container (self.myvariable)
 #------------------------------------------------------------------------------
-def create_mesh(self,context):
+def create_column_mesh(self,context):
 
     # deactivate others
     for o in bpy.data.objects:

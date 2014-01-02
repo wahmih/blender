@@ -28,11 +28,480 @@ import math
 import copy
 from tools import *
 
+#------------------------------------------------------------------
+# Define UI class
+# Kitchens
+#------------------------------------------------------------------
+class KITCHEN(bpy.types.Operator):
+    bl_idname = "mesh.archimesh_kitchen"
+    bl_label = "Cabinets"
+    bl_description = "Cabinet Generator"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    # Define properties
+    type_cabinet = bpy.props.EnumProperty(items = (('1',"Floor",""),
+                                ('2',"Wall","")),
+                                name="Type",
+                                description="Type of cabinets")
+    oldtype = type_cabinet
+     
+    thickness= bpy.props.FloatProperty(name='Thickness',min=0.001,max= 5, default= 0.018,precision=3, description='Board thickness')
+    depth= bpy.props.FloatProperty(name='Depth',min=0.001,max= 50, default= 0.59,precision=3, description='Default cabinet depth')
+    height= bpy.props.FloatProperty(name='Height',min=0.001,max= 50, default= 0.70,precision=3, description='Default cabinet height')
+    handle = bpy.props.EnumProperty(items = (('1',"Model 1",""),
+                                ('2',"Model 2",""),
+                                ('3',"Model 3",""),
+                                ('4',"Model 4",""),
+                                ('5',"Model 5",""),
+                                ('6',"Model 6",""),
+                                ('7',"Model 7",""),
+                                ('8',"Model 8",""),
+                                ('9',"None","")),
+                                name="Handle",
+                                description="Type of handle")
+    handle_x = bpy.props.FloatProperty(name='',min=0.001,max= 10, default= 0.05,precision=3, description='Displacement in X relative position (limited to door size)')
+    handle_z = bpy.props.FloatProperty(name='',min=0.001,max= 10, default= 0.05,precision=3, description='Displacement in Z relative position (limited to door size)')
+    
+    baseboard = bpy.props.BoolProperty(name = "Baseboard",description="Create a baseboard automatically",default = True)
+    baseheight = bpy.props.FloatProperty(name='height',min=0.001,max= 10, default= 0.16,precision=3, description='Baseboard height')
+    basefactor = bpy.props.FloatProperty(name='sink',min=0,max= 1, default= 0.90,precision=3, description='Baseboard sink')
+
+    countertop = bpy.props.BoolProperty(name = "Countertop",description="Create a countertop automatically (only default cabinet height)",default = True)
+    counterheight = bpy.props.FloatProperty(name='height',min=0.001,max= 10, default= 0.02,precision=3, description='Countertop height')
+    counterextend = bpy.props.FloatProperty(name='extend',min=0.001,max= 10, default= 0.03,precision=3, description='Countertop extent')
+ 
+    fitZ = bpy.props.BoolProperty(name = "Floor origin in Z=0",description="Use Z=0 axis as vertical origin floor position",default = True)
+    moveZ = bpy.props.FloatProperty(name='Z position',min=0.001,max= 10, default= 1.5,precision=3, description='Wall cabinet Z position from floor')
+
+    cabinet_num= bpy.props.IntProperty(name='Number of Cabinets',min=1,max= 10, default= 1, description='Number total of cabinets in the Kitchen')
+    # Cabinet width    
+    sX01 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+    sX02 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+    sX03 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+    sX04 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+    sX05 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+    sX06 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+    sX07 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+    sX08 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+    sX09 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+    sX10 = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
+        
+    wY01 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+    wY02 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+    wY03 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+    wY04 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+    wY05 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+    wY06 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+    wY07 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+    wY08 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+    wY09 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+    wY10 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
+
+    wZ01 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wZ02 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wZ03 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wZ04 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wZ05 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wZ06 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wZ07 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wZ08 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wZ09 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wZ10 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+        
+    # Cabinet position shift   
+    pX01 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX02 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX03 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX04 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX05 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX06 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX07 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX08 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX09 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX10 = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+
+    pY01 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+    pY02 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+    pY03 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+    pY04 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+    pY05 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+    pY06 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+    pY07 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+    pY08 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+    pY09 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+    pY10 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
+
+    pZ01 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+    pZ02 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+    pZ03 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+    pZ04 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+    pZ05 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+    pZ06 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+    pZ07 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+    pZ08 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+    pZ09 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+    pZ10 = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
+        
+    # Door type
+    dType01 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('10',"Corner R",""),
+                                    ('9',"Corner L",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+    dType02 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('10',"Corner R",""),
+                                    ('9',"Corner L",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+    dType03 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('10',"Corner R",""),
+                                    ('9',"Corner L",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+    dType04 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('10',"Corner R",""),
+                                    ('9',"Corner L",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+    dType05 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('10',"Corner R",""),
+                                    ('9',"Corner L",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+    dType06 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('10',"Corner R",""),
+                                    ('9',"Corner L",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+    dType07 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('10',"Corner R",""),
+                                    ('9',"Corner L",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+    dType08 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('10',"Corner R",""),
+                                    ('9',"Corner L",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+    dType09 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('9',"Corner L",""),
+                                    ('10',"Corner R",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+    dType10 = bpy.props.EnumProperty(items = (('1',"Single R",""),
+                                    ('2',"Single L",""),
+                                    ('3',"Single T",""),
+                                    ('4',"Glass R",""),
+                                    ('5',"Glass L",""),
+                                    ('6',"Glass T",""),
+                                    ('7',"Drawers",""),
+                                    ('8',"Double",""),
+                                    ('11',"Double Glass",""),
+                                    ('10',"Corner R",""),
+                                    ('9',"Corner L",""),
+                                    ('99',"None","")),
+                        name="Door",
+                        description="Type of front door or drawers")
+
+    # Shelves
+    sNum01 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    sNum02 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    sNum03 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    sNum04 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    sNum05 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    sNum06 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    sNum07 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    sNum08 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    sNum09 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    sNum10 = bpy.props.IntProperty(name='Shelves',min=0,max= 10, default= 1, description='Number total of shelves')
+    
+    # Drawers
+    dNum01 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+    dNum02 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+    dNum03 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+    dNum04 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+    dNum05 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+    dNum06 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+    dNum07 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+    dNum08 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+    dNum09 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+    dNum10 = bpy.props.IntProperty(name='Num',min=1,max= 10, default= 3, description='Number total of drawers')
+
+    # Glass Factor
+    gF01 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+    gF02 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+    gF03 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+    gF04 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+    gF05 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+    gF06 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+    gF07 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+    gF08 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+    gF09 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+    gF10 = bpy.props.FloatProperty(name='',min=0.001,max= 1, default= 0.1,precision=3, description='Glass ratio')
+
+    # Handle flag
+    hand01 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+    hand02 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+    hand03 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+    hand04 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+    hand05 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+    hand06 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+    hand07 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+    hand08 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+    hand09 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+    hand10 = bpy.props.BoolProperty(name = "Handle",description="Create a handle",default = True)
+
+    # Left baseboard
+    bL01 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+    bL02 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+    bL03 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+    bL04 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+    bL05 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+    bL06 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+    bL07 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+    bL08 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+    bL09 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+    bL10 = bpy.props.BoolProperty(name = "Left Baseboard",description="Create a left baseboard",default = False)
+
+    # Right baseboard
+    bR01 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+    bR02 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+    bR03 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+    bR04 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+    bR05 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+    bR06 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+    bR07 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+    bR08 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+    bR09 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+    bR10 = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
+
+    # Fill countertop spaces
+    tC01 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    tC02 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    tC03 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    tC04 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    tC05 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    tC06 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    tC07 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    tC08 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    tC09 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    tC10 = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+
+
+    # Materials        
+    crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
+
+    #-----------------------------------------------------
+    # Draw (create UI interface)
+    #-----------------------------------------------------
+    def draw(self, context):
+        layout = self.layout
+        space = bpy.context.space_data
+        if (not space.local_view):
+            # Imperial units warning
+            if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+                row=layout.row()
+                row.label("Warning: Imperial units not supported", icon='COLOR_RED')
+            
+            box=layout.box()
+            row=box.row()
+            row.prop(self,'type_cabinet')
+                
+            row.prop(self,'thickness')
+            row=box.row()
+            row.prop(self,'depth')
+            row.prop(self,'height')
+            row=box.row()
+            row.prop(self,'handle')
+            if (self.handle != "9"):
+                row.prop(self,'handle_x')
+                row.prop(self,'handle_z')
+            
+            if (self.type_cabinet == "1"):
+                row=box.row()
+                row.prop(self,"countertop")
+                if (self.countertop):
+                    row.prop(self,"counterheight")
+                    row.prop(self,"counterextend")
+                row=box.row()
+                row.prop(self,'baseboard')
+                if (self.baseboard):
+                    row.prop(self,'baseheight')
+                    row.prop(self,'basefactor', slider=True)
+                
+            row=box.row()
+            row.prop(self,'fitZ')
+            if (self.type_cabinet == "2"):
+                row.prop(self,'moveZ')
+    
+            # Cabinet number
+            row=layout.row()
+            row.prop(self,'cabinet_num')
+            if (self.cabinet_num >= 1): add_cabinet(self,'01',self.dType01)
+            if (self.cabinet_num >= 2): add_cabinet(self,'02',self.dType02)
+            if (self.cabinet_num >= 3): add_cabinet(self,'03',self.dType03)
+            if (self.cabinet_num >= 4): add_cabinet(self,'04',self.dType04)
+            if (self.cabinet_num >= 5): add_cabinet(self,'05',self.dType05)
+            if (self.cabinet_num >= 6): add_cabinet(self,'06',self.dType06)
+            if (self.cabinet_num >= 7): add_cabinet(self,'07',self.dType07)
+            if (self.cabinet_num >= 8): add_cabinet(self,'08',self.dType08)
+            if (self.cabinet_num >= 9): add_cabinet(self,'09',self.dType09)
+            if (self.cabinet_num >= 10): add_cabinet(self,'10',self.dType10)
+            
+    
+            box=layout.box()
+            box.prop(self,'crt_mat')
+        else:
+            row=layout.row()
+            row.label("Warning: Operator does not work in local view mode", icon='ERROR')
+        
+    #-----------------------------------------------------
+    # Execute
+    #-----------------------------------------------------
+    def execute(self, context):
+        if (bpy.context.mode == "OBJECT"):
+            # Set default values
+            if (self.oldtype != self.type_cabinet):
+                if (self.type_cabinet == "1"): # Floor
+                    self.depth= 0.59
+                    self.height= 0.70
+                    
+                if (self.type_cabinet == "2"): # Wall
+                    self.depth= 0.35
+                    self.height= 0.70
+                    1
+                self.oldtype = self.type_cabinet
+            # Create cabinets    
+            create_kitchen_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
+#-----------------------------------------------------
+# Add cabinet parameters
+#-----------------------------------------------------
+def add_cabinet(self,num,doorType):
+    layout = self.layout
+    box=layout.box()
+    row = box.row()
+    row.label("Cabinet " + str(num))
+    row.prop(self,'sX' + num)
+
+    row = box.row()
+    row.prop(self,'wY' + num)
+    row.prop(self,'wZ' + num)
+    
+    row = box.row()
+    row.prop(self,'pX' + num)
+    row.prop(self,'pY' + num)
+    row.prop(self,'pZ' + num)
+
+    row = box.row()
+    row.prop(self,'dType' + num)
+    if (doorType == "7"): # Drawers
+        row.prop(self,'dNum' + num) # drawers number
+    else:    
+        row.prop(self,'sNum' + num) # shelves number
+    # Glass ratio
+    if (doorType == "4" or doorType == "5" or doorType == "6" or doorType == "11"):
+        row.prop(self,'gF' + num, slider=True) # shelves number
+    # Handle
+    row = box.row()
+    if (self.handle != "9"):
+        row.prop(self,'hand' + num)
+    if (self.baseboard and self.type_cabinet == "1"): 
+        row.prop(self,'bL' + num)
+        row.prop(self,'bR' + num)
+
+    if (self.countertop and self.type_cabinet == "1"):
+        row = box.row()
+        row.prop(self,'tC' + num)
 #------------------------------------------------------------------------------
 # Generate mesh data
 # All custom values are passed using self container (self.myvariable)
 #------------------------------------------------------------------------------
-def create_mesh(self,context):
+def create_kitchen_mesh(self,context):
     # deactivate others
     for o in bpy.data.objects:
         if (o.select == True):

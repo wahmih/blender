@@ -27,11 +27,98 @@ import bpy
 import math
 from tools import *
 
+
+#------------------------------------------------------------------
+# Define UI class
+# Doors
+#------------------------------------------------------------------
+class DOOR(bpy.types.Operator):
+    bl_idname = "mesh.archimesh_door"
+    bl_label = "Door"
+    bl_description = "Door Generator"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    # Define properties
+    frame_width= bpy.props.FloatProperty(name='Frame width',min=0.25,max= 10, default= 1,precision=2, description='Doorframe width')
+    frame_height= bpy.props.FloatProperty(name='Frame height',min=0.25,max= 10, default= 2.1,precision=2, description='Doorframe height')
+    frame_thick= bpy.props.FloatProperty(name='Frame thickness',min=0.05,max= 0.50, default= 0.08,precision=2, description='Doorframe thickness')
+    frame_size= bpy.props.FloatProperty(name='Frame size',min=0.05,max= 0.25, default= 0.08,precision=2, description='Doorframe size')
+    crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
+    factor= bpy.props.FloatProperty(name='',min=0.2,max= 1, default= 0.5,precision=3, description='Door ratio')
+
+    openside = bpy.props.EnumProperty(items = (('1',"Right open",""),
+                                ('2',"Left open",""),
+                                ('3',"Both sides","")),
+                                name="Open side",
+                                description="Defines the direction for opening the door")
+
+    model = bpy.props.EnumProperty(items = (('1',"Model 01",""),
+                                ('2',"Model 02",""),
+                                ('3',"Model 03",""),
+                                ('4',"Model 04",""),
+                                ('5',"Model 05","Glass"),
+                                ('6',"Model 06","Glass")),
+                                name="Model",
+                                description="Door model")
+    
+    handle = bpy.props.EnumProperty(items = (('1',"Handle 01",""),
+                                ('2',"Handle 02",""),
+                                ('3',"Handle 03",""),
+                                ('4',"Handle 04",""),
+                                ('0',"None","")),
+                                name="Handle",
+                                description="Handle model")
+    
+    #-----------------------------------------------------
+    # Draw (create UI interface)
+    #-----------------------------------------------------
+    def draw(self, context):
+        layout = self.layout
+        space = bpy.context.space_data
+        if (not space.local_view):
+            # Imperial units warning
+            if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+                row=layout.row()
+                row.label("Warning: Imperial units not supported", icon='COLOR_RED')
+            box=layout.box()
+            row=box.row()
+            row.prop(self,'frame_width')
+            row.prop(self,'frame_height')
+            row=box.row()
+            row.prop(self,'frame_thick')
+            row.prop(self,'frame_size')
+            
+            box=layout.box()
+            row=box.row()
+            row.prop(self,'openside')
+            if (self.openside == "3"):
+                row.prop(self,"factor")
+                
+            layout.prop(self,'model')
+            layout.prop(self,'handle')
+            
+            box=layout.box()
+            box.prop(self,'crt_mat')
+        else:
+            row=layout.row()
+            row.label("Warning: Operator does not work in local view mode", icon='ERROR')
+        
+    #-----------------------------------------------------
+    # Execute
+    #-----------------------------------------------------
+    def execute(self, context):
+        if (bpy.context.mode == "OBJECT"):
+            create_door_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
+
 #------------------------------------------------------------------------------
 # Generate mesh data
 # All custom values are passed using self container (self.myvariable)
 #------------------------------------------------------------------------------
-def create_mesh(self,context):
+def create_door_mesh(self,context):
 
     # deactivate others
     for o in bpy.data.objects:
@@ -71,7 +158,7 @@ def create_mesh(self,context):
 # 
 #------------------------------------------------------------------------------
 def make_one_door(self,context, myFrame, width, openside):
-    myDoor = create_door_mesh(self, context, myFrame, width, openside)
+    myDoor = create_door_data(self, context, myFrame, width, openside)
     if (self.handle != "0"):
         handle1 = create_handle(self, context, myFrame, myDoor, "Front",width,openside)
         handle1.select = True
@@ -170,7 +257,7 @@ def create_doorframe(self,context):
 # Create Door
 # All custom values are passed using self container (self.myvariable)
 #------------------------------------------------------------------------------
-def create_door_mesh(self,context,myFrame,width,openside):
+def create_door_data(self,context,myFrame,width,openside):
     
     # Retry mesh data
     if (self.model == "1"):

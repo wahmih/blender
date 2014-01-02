@@ -28,11 +28,102 @@ import mathutils
 import math
 from tools import *
 
+#------------------------------------------------------------------
+# Define UI class
+# Rooms
+#------------------------------------------------------------------
+class ROOF(bpy.types.Operator):
+    bl_idname = "mesh.archimesh_roof"
+    bl_label = "Roof"
+    bl_description = "Roof Generator"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    # Define properties
+    roof_width = bpy.props.IntProperty(name='Num tiles X',min=1,max= 100, default= 6, description='Tiles in X axis')
+    roof_height = bpy.props.IntProperty(name='Num tiles Y',min=1,max= 100, default= 3, description='Tiles in Y axis')
+    #roof_base= bpy.props.FloatProperty(name='Base thickness',min=0.002,max= 0.50, default= 0.02,precision=3, description='Thickness of base in the smallets point')
+    
+    roof_thick= bpy.props.FloatProperty(name='Tile thickness',min=0.000,max= 0.50, default= 0.012,precision=3, description='Thickness of the roof tile')
+    roof_angle= bpy.props.FloatProperty(name='Roof slope',min=0.0,max= 70.0, default= 0.0,precision=1, description='Roof angle of slope')
+    roof_scale= bpy.props.FloatProperty(name='Tile scale',min=0.001,max= 10, default= 1,precision=3, description='Scale of roof tile')
+    
+    crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
+
+    model = bpy.props.EnumProperty(items = (('1',"Model 01",""),
+                                ('2',"Model 02",""),
+                                ('3',"Model 03",""),
+                                ('4',"Model 04","")),
+                                name="Model",
+                                description="Roof tile model")
+    
+    #-----------------------------------------------------
+    # Draw (create UI interface)
+    #-----------------------------------------------------
+    def draw(self, context):
+        layout = self.layout
+        space = bpy.context.space_data
+        if (not space.local_view):
+            # Imperial units warning
+            if (bpy.context.scene.unit_settings.system == "IMPERIAL"):
+                row=layout.row()
+                row.label("Warning: Imperial units not supported", icon='COLOR_RED')
+            box=layout.box()
+            box.prop(self,'model')
+            box.prop(self,'roof_width')
+            box.prop(self,'roof_height')
+            box.prop(self,'roof_scale')
+            
+            if (self.model == "1"):
+                tilesize_x = 0.184
+                tilesize_y = 0.413
+            
+            if (self.model == "2"):
+                tilesize_x = 0.103
+                tilesize_y = 0.413
+            
+            if (self.model == "3"):
+                tilesize_x = 0.184
+                tilesize_y = 0.434
+            
+            if (self.model == "4"):
+                tilesize_x = 0.231
+                tilesize_y = 0.39
+                
+            
+            x = tilesize_x * self.roof_scale * self.roof_width
+            y = tilesize_y * self.roof_scale * self.roof_height
+             
+            buf = 'Size: {0:.2f} * {1:.2f} aprox.'.format(x,y)
+            box.label(buf)
+        
+            box=layout.box()
+            box.prop(self,'roof_thick')
+            box.prop(self,'roof_angle')
+    
+            box=layout.box()
+            box.prop(self,'crt_mat')
+        else:
+            row=layout.row()
+            row.label("Warning: Operator does not work in local view mode", icon='ERROR')
+        
+    #-----------------------------------------------------
+    # Execute
+    #-----------------------------------------------------
+    def execute(self, context):
+        if (bpy.context.mode == "OBJECT"):
+            create_roof_mesh(self,context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
+            return {'CANCELLED'}
+
+
+
 #------------------------------------------------------------------------------
 # Generate mesh data
 # All custom values are passed using self container (self.myvariable)
 #------------------------------------------------------------------------------
-def create_mesh(self,context):
+def create_roof_mesh(self,context):
 
     # deactivate others
     for o in bpy.data.objects:
