@@ -237,27 +237,33 @@ def select_vertices(myObject,selVertices,clear = True):
 # Mark Seam
 #--------------------------------------------------------------------            
 def mark_seam(myObject):
-    myObject.select = True
-    bpy.context.scene.objects.active = myObject
-    if (bpy.context.scene.objects.active.name == myObject.name):
-        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.ops.mesh.mark_seam()
+    try:
+        myObject.select = True
+        bpy.context.scene.objects.active = myObject
+        if (bpy.context.scene.objects.active.name == myObject.name):
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            bpy.ops.mesh.mark_seam()
+            bpy.ops.object.mode_set(mode = 'OBJECT')
+    except:
         bpy.ops.object.mode_set(mode = 'OBJECT')
-
 #--------------------------------------------------------------------
 # Unwrap mesh
 #--------------------------------------------------------------------            
 def unwrap_mesh(myObject, allfaces = True):
-    myObject.select = True
-    bpy.context.scene.objects.active = myObject
-    if (bpy.context.scene.objects.active.name == myObject.name):
-        # Unwrap 
-        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        if (allfaces == True):
-            bpy.ops.mesh.select_all(action = 'DESELECT')
-            bpy.ops.mesh.select_all()
-        bpy.ops.uv.unwrap()
+    try:
+        myObject.select = True
+        bpy.context.scene.objects.active = myObject
+        if (bpy.context.scene.objects.active.name == myObject.name):
+            # Unwrap 
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            if (allfaces == True):
+                bpy.ops.mesh.select_all(action = 'DESELECT')
+                bpy.ops.mesh.select_all()
+            bpy.ops.uv.unwrap()
+            bpy.ops.object.mode_set(mode = 'OBJECT')
+    except:
         bpy.ops.object.mode_set(mode = 'OBJECT')
+        
 #--------------------------------------------------------------------
 # Create cycles diffuse material
 #--------------------------------------------------------------------

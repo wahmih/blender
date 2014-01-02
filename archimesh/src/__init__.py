@@ -30,7 +30,7 @@ bl_info = {
     "name": "Archimesh",
     "author": "Antonio Vazquez (antonioya)",
     "location": "View3D > Add > Mesh > Archimesh",
-    "version": (0,7),
+    "version": (0,7,1),
     "blender": (2, 6, 8),
     "description": "Generate rooms, doors, windows, kitchen cabinets, shelves, roofs, stairs and other architecture stuff.",
     "category": "Add Mesh"}
