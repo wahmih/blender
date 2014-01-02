@@ -18,12 +18,16 @@ Kitchen cabinets
 
 Changes in version 0.7
 =============================
-Shelves
-Windows
-Japanese curtains
-Roller curtains
-Venetian blind
-Books
-Lamps
+- Shelves
+- Windows
+- Japanese curtains
+- Roller curtains
+- Venetian blind
+- Books
+- Lamps
 
 The source code has been reorganized and some parameters have been moved from init.py
+
+Changes in version 0.7.1
+=============================
+Fixed error wih invisible walls in UV unwrap
