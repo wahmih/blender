@@ -39,8 +39,8 @@ global pathStyleHtml
 #------------------------------------------------------------------------------
 # Generate HTML file
 #------------------------------------------------------------------------------
-def write_html(outpath,include_render,only_render,include_story,threshold,include_images
-               ,include_links,typecolor,webserver,include_borders):
+def write_html(outpath,include_render,only_render,include_header,include_story,threshold,include_images
+               ,include_links,typecolor,webserver,include_borders,grease):
     #-------------------------------
     # extract path and filename 
     #-------------------------------
@@ -119,13 +119,14 @@ def write_html(outpath,include_render,only_render,include_story,threshold,includ
         elif ("<!--BCKCOLOR-->" in line):
             html_bckcolor(fOut,line,typecolor)    
         elif ("<!--INFO-->" in line):
-            html_info(filepath,fOut)    
+            if (include_header == True):
+                html_info(filepath,fOut)    
         elif ("<!--RENDER-->" in line):
             if (include_render == True):
                 html_render(pathImages,fOut,filename,only_render)    
         elif ("<!--STORYBOARD-->" in line):
             if (int(include_story) > 0):
-                html_storyboard(pathImages,fOut,filename,only_render,include_story,threshold)    
+                html_storyboard(pathImages,fOut,filename,only_render,include_story,threshold,grease,include_header)    
         elif ("<!--IMAGES-->" in line):
             if (include_images == True):
                 html_images(pathImages,fOut,include_borders)    
@@ -292,6 +293,15 @@ def html_info(rootpath,fHandle):
     fHandle.write("     </td>\n") 
     fHandle.write("     <td>&nbsp;</td>\n") 
     fHandle.write("    </tr>\n")
+    # Get Author
+    prefs = bpy.context.user_preferences.system
+    author = prefs.author
+    if (len(author) > 0):
+        fHandle.write("    <tr>\n")
+        fHandle.write("     <td colspan=\"3\"><span class=\"smalltitle\">Author:</span>&nbsp;" + author)
+        fHandle.write("     </td>\n") 
+        fHandle.write("     <td>&nbsp;</td>\n") 
+        fHandle.write("    </tr>\n")
     #-------------------
     # Table foot
     #-------------------
@@ -423,7 +433,7 @@ def existinlist(list,element):
 #-------------------------------------
 # Create storyboard table
 #-------------------------------------
-def html_storyboard(rootpath,fHandle,filehtm,only_render,include_story,threshold):
+def html_storyboard(rootpath,fHandle,filehtm,only_render,include_story,threshold,grease,include_header):
     current_scene = bpy.context.scene
     f = current_scene.frame_start
     t = current_scene.frame_end
@@ -433,19 +443,50 @@ def html_storyboard(rootpath,fHandle,filehtm,only_render,include_story,threshold
     # Get keyframe list
     #-------------------
     klist = []
-    for a in bpy.data.actions:    
-        for curve in  a.fcurves:
-            keyframePoints = curve.keyframe_points
-            for keyframe in keyframePoints:
-                if (existinlist(klist,keyframe.co[0]) == False):
-                    k = int(keyframe.co[0])
-                    if ( k >= f and k <= t):
-                        klist.append(k)
+    #--------------------------------------
+    # Using default keyframing
+    #--------------------------------------
+    if (grease == False):
+        for a in bpy.data.actions:    
+            for curve in  a.fcurves:
+                keyframePoints = curve.keyframe_points
+                for keyframe in keyframePoints:
+                    if (existinlist(klist,keyframe.co[0]) == False):
+                        k = int(keyframe.co[0])
+                        if ( k >= f and k <= t):
+                            klist.append(k)
+    #--------------------------------------
+    # Using grease pencil keyframing
+    #--------------------------------------
+    if (grease == True):
+        try:
+            gp = bpy.data.grease_pencil[0]
+        except:
+            return  # nothing to do
+        # Get Layer
+        layer = gp.layers.get("Storyboard_html")
+        # Get Frames
+        if layer is not None:
+            for frame in layer.frames:
+                k = frame.frame_number
+                if ( k >= f and k <= t):
+                    klist.append(k)
+    
     klist.sort()
     if (len(klist) == 0):
         return   
-    
-    fHandle.write("<tr><td class=\"header\">&nbsp;&nbsp;Storyboard<span class=\"smalltitle\">(Camera: " + current_scene.camera.name + ")</span></td></tr>\n")
+    if (include_header == True):
+        fHandle.write("<tr><td class=\"header\">&nbsp;&nbsp;Storyboard<span class=\"smalltitle\">(Camera: " + current_scene.camera.name + ")</span></td></tr>\n")
+    else:    
+        # blend name
+        (filepath, filename) = os.path.split(bpy.data.filepath)
+        current_scene = bpy.context.scene
+        fHandle.write("<tr><td class=\"header\">&nbsp;&nbsp;Storyboard"
+            + "<span class=\"smalltitle\">&nbsp;&nbsp;&nbsp;File: " + filename + "</span>"
+            + "<span class=\"smalltitle\">&nbsp;&nbsp;&nbsp;Scene: " + current_scene.name + "</span>"
+            + "<span class=\"smalltitle\">&nbsp;&nbsp;&nbsp;Fps: " + str(current_scene.render.fps) + "</span>"
+            + "<span class=\"smalltitle\">&nbsp;&nbsp;&nbsp;Camera: " + current_scene.camera.name + "</span>"
+            + "</td></tr>\n")
     #-------------------
     # Table header
     #-------------------
@@ -460,7 +501,10 @@ def html_storyboard(rootpath,fHandle,filehtm,only_render,include_story,threshold
     #--------------------------
     # Image (export and table)
     #--------------------------
-    oldSlot = bpy.data.images['Render Result'].render_slot
+    try:
+        oldSlot = bpy.data.images['Render Result'].render_slot
+    except:
+        oldSlot = 1
     if (only_render == True):
         set_only_render(True)
         
@@ -536,7 +580,11 @@ def html_storyboard(rootpath,fHandle,filehtm,only_render,include_story,threshold
     
     
     # back to old configuration        
-    bpy.data.images['Render Result'].render_slot = oldSlot    
+    try:
+        bpy.data.images['Render Result'].render_slot = oldSlot
+    except:
+        bpy.data.images['Render Result'].render_slot = 1
+                
     current_scene.frame_set(oldframe)
     
     if (only_render == True):

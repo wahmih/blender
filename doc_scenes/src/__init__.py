@@ -30,7 +30,7 @@ bl_info = {
     "name": "Create html documentation",
     "author": "Antonio Vazquez (antonioya)",
     "location": "File > Import-Export",
-    "version": (0, 2),
+    "version": (0, 3),
     "blender": (2, 6, 8),
     "description": "Create html documentation for blend files, including storyboards, images and linked assets.",
     "category": "Import-Export"}
@@ -96,27 +96,36 @@ class EXPORT_html_doc(bpy.types.Operator, ExportHelper):
         description="Hide controlers for OpenGL renders.",
         default = True)
      
+    include_header = bpy.props.BoolProperty(
+        name = "Information header",
+        description="Include a header with file information.",
+        default = True)
+    
     include_story = bpy.props.EnumProperty(items = (('2',"Two keframes by line",""),
                                     ('1',"One keyframe by line",""),
                                     ('3',"Keyframe and Notes",""),
                                     ('0',"None","")),
                                     name="Storyboard",
                                     description="Include a OpenGL render for each keyframe.")
+    grease = bpy.props.BoolProperty(
+        name = "Use grease pencil marks",
+        description="Use the keyframes marked with grease pencil for storyboarding",
+        default = False)
     
     threshold = bpy.props.IntProperty(
             name = "threshold", 
-            description="threshold between keyframes in storyboard.", 
+            description="threshold between keyframes in storyboard (only if grease pencil is not used).", 
             default = 1, min = 1, max = 25)
         
     include_images = bpy.props.BoolProperty(
         name = "Images thumbnails",
         description="Include a table with all images used.",
-        default = True)
+        default = False)
     
     include_links = bpy.props.BoolProperty(
         name = "Linked files",
         description="Include a table with all linked files.",
-        default = True)
+        default = False)
     
     
     typecolor = bpy.props.EnumProperty(items = (('#336699',"Blue",""),
@@ -132,7 +141,7 @@ class EXPORT_html_doc(bpy.types.Operator, ExportHelper):
     
     webserver = bpy.props.BoolProperty(
         name = "Optimize for webserver",
-        description="OPtimize folder structure for deploying to webservers",
+        description="Optimize folder structure for deploying to webservers",
         default = False)
 
     include_borders = bpy.props.BoolProperty(
@@ -140,24 +149,39 @@ class EXPORT_html_doc(bpy.types.Operator, ExportHelper):
         description="Include borders in documentation tables.",
         default = False)
 
-
 #----------------------------------------------------------
 # Execute
 #----------------------------------------------------------
     def execute(self, context):
         print("doc_scenes:", self.properties.filepath)
-        #from . import simple_obj_export
+        # Disable Grease pencil visibility
+        layer = None
+        try:
+            gp = bpy.data.grease_pencil[0]
+        except:
+            gp = None
+        # Get Layer
+        if (gp != None):
+            layer = gp.layers.get("Storyboard_html")
+            if (layer != None):
+                layer.hide = True
         html_maker.write_html(
             self.properties.filepath, 
             self.include_render,
             self.only_render,
+            self.include_header,
             self.include_story,
             self.threshold,
             self.include_images,
             self.include_links,
             self.typecolor,
             self.webserver,
-            self.include_borders)
+            self.include_borders,
+            self.grease)
+        # Enable Grease pencil visibility
+        if (layer != None):
+            layer.hide = False
+ 
         return {'FINISHED'}
 #----------------------------------------------------------
 # Invoke
@@ -166,6 +190,105 @@ class EXPORT_html_doc(bpy.types.Operator, ExportHelper):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
  
+#------------------------------------------------------
+# Button: Action class ON
+#------------------------------------------------------
+class RunActionOn(bpy.types.Operator):
+    bl_idname = "object.storyboard_on"
+    bl_label = "Include"
+    bl_description = "include frame in Storyboard documentation"
+
+    #------------------------------
+    # Execute
+    #------------------------------
+    def execute(self, context):
+        scene = context.scene
+        # Get Grease pencil
+        try:
+            gp = bpy.data.grease_pencil[0]
+        except:
+            gp=bpy.data.grease_pencil.new('GPencil')
+        # Assign to scene    
+        scene.grease_pencil=gp
+        # Get Layer
+        layer = gp.layers.get("Storyboard_html")
+        if (layer == None):
+            layer=gp.layers.new("Storyboard_html")
+         
+        layer.hide = False    
+        layer.color = (1,0,0)
+        # Get Frame  
+        try:  
+            frame=layer.frames.new(scene.frame_current)
+            print("Storyboard frame(" + str(scene.frame_current) + "): ON")
+            self.report({'INFO'}, "Storyboard frame(" + str(scene.frame_current) + "): ON")
+            # Draw
+            stroke=frame.strokes.new()
+            stroke.draw_mode='SCREEN' #default setting
+            stroke.points.add(2)
+            stroke.points[0].co=(0,3,0)
+            stroke.points[1].co=(3,0,0)
+
+            stroke=frame.strokes.new()
+            stroke.draw_mode='SCREEN' #default setting
+            stroke.points.add(2)
+            stroke.points[0].co=(3,3,0)
+            stroke.points[1].co=(0,0,0)
+        except:
+            return {'FINISHED'}
+        
+        return {'FINISHED'}
+#------------------------------------------------------
+# Button: Action class OFF
+#------------------------------------------------------
+class RunActionOff(bpy.types.Operator):
+    bl_idname = "object.storyboard_off"
+    bl_label = "Remove"
+    bl_description = "Remove frame from Storyboard documentation"
+
+    #------------------------------
+    # Execute
+    #------------------------------
+    def execute(self, context):
+        print("Storyboard frame: OFF")
+        scene = context.scene
+        # Get Grease pencil
+        try:
+            gp = bpy.data.grease_pencil[0]
+        except:
+            return {'FINISHED'} # nothing to do
+        # Get Layer
+        layer = gp.layers.get("Storyboard_html")
+        
+        # Get Frame
+        if layer is not None:
+            for frame in layer.frames:
+                if frame.frame_number == scene.frame_current:
+                    layer.frames.remove(frame)
+                    print("Storyboard frame(" + str(scene.frame_current) + "): OFF")
+                    self.report({'INFO'}, "Storyboard frame(" + str(scene.frame_current) + "): OFF")
+                    break        
+        
+        return {'FINISHED'}
+#------------------------------------------------------
+# Buttons: UI Class
+#------------------------------------------------------
+class PanelUI(bpy.types.Panel):
+    bl_label = "Storyboard"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "TOOLS"
+
+    #------------------------------
+    # Draw UI
+    #------------------------------
+    def draw(self, context):
+        layout = self.layout
+        row = layout.row(align=False)
+        row.operator("object.storyboard_on", icon="FILE_TICK")
+        row.operator("object.storyboard_off", icon="X" )
+        row = layout.row(align=False)
+        row.operator("io_export_h.doc_scenes", text="Export Now",icon='URL')
+                    
 #----------------------------------------------------------
 # Registration
 #----------------------------------------------------------
