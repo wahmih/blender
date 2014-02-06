@@ -171,6 +171,18 @@ def set_modifier_solidify(myObject,width):
                 mod.thickness = width
                 mod.use_even_offset = True
                 mod.use_quality_normals = True
+                break
+                
+#--------------------------------------------------------------------
+# Add modifier (boolean)
+#--------------------------------------------------------------------
+def set_modifier_boolean(myObject,bolObject):
+    bpy.context.scene.objects.active = myObject
+    if bpy.context.scene.objects.active.name == myObject.name:
+        bpy.ops.object.modifier_add(type='BOOLEAN')
+        mod = myObject.modifiers[len(myObject.modifiers) - 1]
+        mod.operation = 'DIFFERENCE'
+        mod.object = bolObject
 #--------------------------------------------------------------------
 # Set material to object
 #--------------------------------------------------------------------            

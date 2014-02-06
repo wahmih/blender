@@ -36,6 +36,7 @@ class ROOF(bpy.types.Operator):
     bl_idname = "mesh.archimesh_roof"
     bl_label = "Roof"
     bl_description = "Roof Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     # Define properties

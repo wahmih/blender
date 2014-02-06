@@ -37,6 +37,7 @@ class JAPAN(bpy.types.Operator):
     bl_idname = "mesh.archimesh_japan"
     bl_label = "Japanese curtains"
     bl_description = "Japanese curtains Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     width= bpy.props.FloatProperty(name='Width',min=0.30,max= 4, default= 1,precision=3, description='Total width')
@@ -130,6 +131,7 @@ class ROLLER(bpy.types.Operator):
     bl_idname = "mesh.archimesh_roller"
     bl_label = "Roller curtains"
     bl_description = "Roller_curtains Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     width= bpy.props.FloatProperty(name='Width',min=0.30,max= 4, default= 1,precision=3, description='Total width')
@@ -182,6 +184,7 @@ class VENETIAN(bpy.types.Operator):
     bl_idname = "mesh.archimesh_venetian"
     bl_label = "Venetian blind"
     bl_description = "Venetian blind Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     width= bpy.props.FloatProperty(name='Width',min=0.30,max= 4, default= 1,precision=3, description='Total width')

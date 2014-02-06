@@ -20,530 +20,377 @@
 #----------------------------------------------------------
 # File: room_maker.py
 # Automatic generation of rooms
-# Author: Antonio Vazquez (antonioya)
+# Author: Antonio Vazquez (antonioya) and Eduardo Gutierrez
 #
 #----------------------------------------------------------
 import bpy
 import math
+import os
+import datetime
+import time
 from tools import *
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+#----------------------------------------------------------
+#    Export menu UI
+#----------------------------------------------------------
+ 
+class EXPORT_ROOM(bpy.types.Operator, ExportHelper):
+    bl_idname = "io_export.roomdata"
+    bl_description = 'Export Room data (.dat)'
+    bl_category = 'Archimesh'
+    bl_label = "Export"
+ 
+    # From ExportHelper. Filter filenames.
+    filename_ext = ".dat"
+    filter_glob = bpy.props.StringProperty(default="*.dat", options={'HIDDEN'})
+ 
+    filepath = bpy.props.StringProperty(
+        name="File Path", 
+        description="File path used for exporting room data file", 
+        maxlen= 1024, default= "")
+ 
+
+#----------------------------------------------------------
+# Execute
+#----------------------------------------------------------
+    def execute(self, context):
+        print("Exporting:", self.properties.filepath)
+        try:
+            myObj = bpy.context.active_object
+            myData = myObj.RoomGenerator[0]
+            
+            #-------------------------------
+            # extract path and filename 
+            #-------------------------------
+            (filepath, filename) = os.path.split(self.properties.filepath)
+            print('Exporting %s' % filename)
+            #-------------------------------
+            # Open output file
+            #-------------------------------
+            realpath = os.path.realpath(os.path.expanduser(self.properties.filepath))
+            fOut = open(realpath, 'w')
+                
+            st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+            fOut.write("# Archimesh room export data\n")
+            fOut.write("# " + st +"\n")
+            fOut.write("#======================================================\n")
+    
+            fOut.write("name=" + myObj.name + "\n")
+            fOut.write("height=" + str(round(myData.room_height,3)) + "\n")
+            fOut.write("thickness=" + str(round(myData.wall_width,3)) + "\n")
+            fOut.write("inverse=" + str(myData.inverse) + "\n")
+            fOut.write("ceiling=" + str(myData.ceiling) + "\n")
+            fOut.write("floor=" + str(myData.floor) + "\n")
+            fOut.write("close=" + str(myData.merge) + "\n")
+    
+            # Walls
+            fOut.write("#\n# Walls\n#\n")
+            fOut.write("walls=" + str(myData.wall_num) + "\n")
+            i = 0
+            for w in myData.walls:
+                if i < myData.wall_num:
+                    i = i + 1
+                    fOut.write("w=" + str(round(w.w,3)))
+                    if w.a == True: # advance
+                        fOut.write(",a=" + str(w.a) + ",")
+                        fOut.write("r=" + str(round(w.r,1)) + ",")
+                        fOut.write("h=" + str(w.h) + ",")
+                        fOut.write("m=" + str(round(w.m,3)) + ",")
+                        fOut.write("f=" + str(round(w.f,3)) + ",")
+                        fOut.write("c=" + str(w.curved) + ",")
+                        fOut.write("cf=" + str(round(w.curve_factor,1)) + ",")
+                        fOut.write("cd=" + str(round(w.curve_arc_deg,1)) + ",")
+                        fOut.write("cs=" + str(w.curve_steps) + "\n")
+                    else:
+                        fOut.write("\n")
+                    
+            # Baseboard
+            fOut.write("#\n# Baseboard\n#\n")
+            fOut.write("baseboard=" + str(myData.baseboard) + "\n")
+            fOut.write("baseh=" + str(round(myData.base_height,3)) + "\n")
+            fOut.write("baset=" + str(round(myData.base_width,3)) + "\n")
+            # Materials
+            fOut.write("#\n# Materials\n#\n")
+            fOut.write("materials=" + str(myData.crt_mat) + "\n")
+            
+            
+            fOut.close()
+            self.report({'INFO'}, realpath + "successfully exported")
+        except:
+            self.report({'ERROR'}, "Unable to export room data")
+
+ 
+        return {'FINISHED'}
+#----------------------------------------------------------
+# Invoke
+#----------------------------------------------------------
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+#----------------------------------------------------------
+#    Import menu UI
+#----------------------------------------------------------
+ 
+class IMPORT_ROOM(bpy.types.Operator, ImportHelper):
+    bl_idname = "io_import.roomdata"
+    bl_description = 'Import Room data (.dat)'
+    bl_category = 'Archimesh'
+    bl_label = "Import"
+ 
+    # From Helper. Filter filenames.
+    filename_ext = ".dat"
+    filter_glob = bpy.props.StringProperty(default="*.dat", options={'HIDDEN'})
+ 
+    filepath = bpy.props.StringProperty(
+        name="File Path", 
+        description="File path used for exporting room data file", 
+        maxlen= 1024, default= "")
+    
+#----------------------------------------------------------
+# Execute
+#----------------------------------------------------------
+    def execute(self, context):
+        print("Importing:", self.properties.filepath)
+        try:
+            realpath = os.path.realpath(os.path.expanduser(self.properties.filepath))
+            fInput = open(realpath)
+            line = fInput.readline()   
+            
+            myObj = bpy.context.active_object
+            myData = myObj.RoomGenerator[0]
+            #----------------------------------         
+            # Loop all records from file
+            #----------------------------------
+            idx = 0 # index of each wall
+            while line:
+                if line[:1] != '#':
+                    if "name=" in line.lower():
+                        myObj.name = line[5:-1]
+                        
+                    elif "height=" in line.lower():
+                        myData.room_height = float(line[7:-1])
+                           
+                    elif "thickness=" in line.lower():
+                        myData.wall_width = float(line[10:-1])
+                        
+                    elif "inverse=" in line.lower():
+                        if line[8:-4].upper() == "T":
+                            myData.inverse = True
+                        else:
+                            myData.inverse = False
+                             
+                    elif "ceiling=" in line.lower():
+                        if line[8:-4].upper() == "T":
+                            myData.ceiling = True
+                        else:
+                            myData.ceiling = False
+                        
+                    elif "floor=" in line.lower():
+                        if line[6:-4].upper() == "T":
+                            myData.floor = True
+                        else:
+                            myData.floor = False
+                        
+                    elif "close=" in line.lower():
+                        if line[6:-4].upper() == "T":
+                            myData.merge = True
+                        else:
+                            myData.merge = False
+        
+                    elif "walls=" in line.lower():
+                        myData.wall_num = int(line[6:-1])
+     
+                    #---------------------
+                    # Walls Data
+                    #---------------------
+                    elif "w=" in line.lower() and idx < myData.wall_num:
+                        # get all pieces
+                        buf = line[:-1] + ","
+                        s = buf.split(",")
+                        for e in s:
+                            param = e.lower()
+                            if "w=" in param:
+                                myData.walls[idx].w = float(e[2:])
+                            elif "a=" in param:
+                                if "true" == param[2:]:
+                                    myData.walls[idx].a = True
+                                else:
+                                    myData.walls[idx].a = False
+                            elif "r=" in param:
+                                myData.walls[idx].r = float(e[2:])
+                            elif "h=" in param:
+                                myData.walls[idx].h = e[2:]
+                            elif "m=" in param:
+                                myData.walls[idx].m = float(e[2:])
+                            elif "f=" == param[0:2]:
+                                myData.walls[idx].f = float(e[2:])
+                            elif "c=" in param:
+                                if "true" == param[2:]:
+                                    myData.walls[idx].curved = True
+                                else:
+                                    myData.walls[idx].curved = False
+                            elif "cf=" in param:
+                                myData.walls[idx].curve_factor = float(e[3:])
+                            elif "cd=" in param:
+                                myData.walls[idx].curve_arc_deg = float(e[3:])
+                            elif "cs=" in param:
+                                myData.walls[idx].curve_steps = int(e[3:])
+                        idx = idx + 1
+    
+                    elif "materials=" in line.lower():
+                        if line[10:-4].upper() == "T":
+                            myData.crt_mat = True
+                        else:
+                            myData.crt_mat = False
+                       
+                line = fInput.readline()
+                
+            fInput.close()
+            self.report({'INFO'}, realpath + "successfully imported")
+        except:
+            self.report({'ERROR'}, "Unable to import room data")
+ 
+        return {'FINISHED'}
+#----------------------------------------------------------
+# Invoke
+#----------------------------------------------------------
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 #------------------------------------------------------------------
-# Reset room default values
-# Rooms
-#------------------------------------------------------------------
-def reset_room(self):
-    self.room_height=2.4
-    self.wall_width=0.0
-    self.inverse = False
-    self.crt_mat = True
-    self.wall_num=1
-    self.baseboard = True
-    self.base_width=0.015
-    self.base_height=0.12
-    self.ceiling = False
-    self.floor = False
-    self.merge = False
-   
-    self.w01=1
-    self.w02=1
-    self.w03=1
-    self.w04=1
-    self.w05=1
-    self.w06=1
-    self.w07=1
-    self.w08=1
-    self.w09=1
-    self.w10=1
-    self.w11=1
-    self.w12=1
-    self.w13=1
-    self.w14=1
-    self.w15=1
-    self.w16=1
-    self.w17=1
-    self.w18=1
-    self.w19=1
-    self.w20=1
-    self.w11=1
-    self.w12=1
-    self.w23=1
-    self.w24=1
-    self.w25=1
-    
-    self.a01= False
-    self.a02= False
-    self.a03= False
-    self.a04= False
-    self.a05= False
-    self.a06= False
-    self.a07= False
-    self.a08= False
-    self.a09= False
-    self.a10= False
-    self.a11= False
-    self.a12= False
-    self.a13= False
-    self.a14= False
-    self.a15= False
-    self.a16= False
-    self.a17= False
-    self.a18= False
-    self.a19= False
-    self.a20= False
-    self.a21= False
-    self.a22= False
-    self.a23= False
-    self.a24= False
-    self.a25= False
-   
-    self.m01= 0
-    self.m02= 0
-    self.m03= 0
-    self.m04= 0
-    self.m05= 0
-    self.m06= 0
-    self.m07= 0
-    self.m08= 0
-    self.m09= 0
-    self.m10= 0
-    self.m11= 0
-    self.m12= 0
-    self.m13= 0
-    self.m14= 0
-    self.m15= 0
-    self.m16= 0
-    self.m17= 0
-    self.m18= 0
-    self.m19= 0
-    self.m20= 0
-    self.m21= 0
-    self.m22= 0
-    self.m23= 0
-    self.m24= 0
-    self.m25= 0
-       
-    self.f01= 0
-    self.f02= 0
-    self.f03= 0
-    self.f04= 0
-    self.f05= 0
-    self.f06= 0
-    self.f07= 0
-    self.f08= 0
-    self.f09= 0
-    self.f10= 0
-    self.f11= 0
-    self.f12= 0
-    self.f13= 0
-    self.f14= 0
-    self.f15= 0
-    self.f16= 0
-    self.f17= 0
-    self.f18= 0
-    self.f19= 0
-    self.f20= 0
-    self.f21= 0
-    self.f22= 0
-    self.f23= 0
-    self.f24= 0
-    self.f25= 0
-       
-    self.r01= 0
-    self.r02= 90
-    self.r03= 0
-    self.r04= 90
-    self.r05= 0
-    self.r06= 90
-    self.r07= 0
-    self.r08= 90
-    self.r09= 0
-    self.r10= 90
-    self.r11= 0
-    self.r12= 90
-    self.r13= 0
-    self.r14= 90
-    self.r15= 0
-    self.r16= 90
-    self.r17= 0
-    self.r18= 90
-    self.r19= 0
-    self.r20= 90
-    self.r21= 0
-    self.r22= 90
-    self.r23= 0
-    self.r24= 90
-    self.r25= 0
-    
-    self.h01 = '0'
-    self.h02 = '0'
-    self.h03 = '0'
-    self.h04 = '0'
-    self.h05 = '0'
-    self.h06 = '0'
-    self.h07 = '0'
-    self.h08 = '0'
-    self.h09 = '0'
-    self.h10 = '0'
-    self.h11 = '0'
-    self.h12 = '0'
-    self.h13 = '0'
-    self.h14 = '0'
-    self.h15 = '0'
-    self.h16 = '0'
-    self.h17 = '0'
-    self.h18 = '0'
-    self.h19 = '0'
-    self.h20 = '0'
-    self.h21 = '0'
-    self.h22 = '0'
-    self.h23 = '0'
-    self.h24 = '0'
-    self.h25 = '0'
-       
-    self.reset = '0';
-#------------------------------------------------------------------
-# Define UI class
-# Rooms
+# Define operator class to create rooms
 #------------------------------------------------------------------
 class ROOM(bpy.types.Operator):
     bl_idname = "mesh.archimesh_room"
     bl_label = "Room"
-    bl_description = "Room Generator"
+    bl_description = "Generate room with walls, baseboard, floor and ceiling."
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
-    
-    # reset function
-    reset=bpy.props.EnumProperty(items = (('0',"Keep last values",""),('1',"Reset to Default","")),
-                                name="",description="Reset all values to default parameters")
-
-    # Define properties
-    room_height= bpy.props.FloatProperty(name='Height',min=0.001,max= 50, default= 2.4,precision=3, description='Room height')
-    wall_width= bpy.props.FloatProperty(name='Thickness',min=0.000,max= 10, default= 0.0,precision=3, description='Thickness of the walls')
-    inverse = bpy.props.BoolProperty(name = "Inverse",description="Inverse normals to outside.",default = False)
-    crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
-
-    wall_num= bpy.props.IntProperty(name='Number of Walls',min=1,max= 25, default= 1, description='Number total of walls in the room')
-    
-    baseboard = bpy.props.BoolProperty(name = "Create baseboard",description="Create a baseboard automatically.",default = True)
-    base_width= bpy.props.FloatProperty(name='Width',min=0.001,max= 10, default= 0.015,precision=3, description='Baseboard width')
-    base_height= bpy.props.FloatProperty(name='Height',min=0.05,max= 20, default= 0.12,precision=3, description='Baseboard height')
-    
-    ceiling = bpy.props.BoolProperty(name = "Ceiling",description="Create a ceiling.",default = False)
-    floor = bpy.props.BoolProperty(name = "Floor",description="Create a floor automatically.",default = False)
-
-    merge = bpy.props.BoolProperty(name = "Close walls",description="Close walls to create a full closed room.",default = False)
-   
-    w01= bpy.props.FloatProperty(name='Wall01 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w02= bpy.props.FloatProperty(name='Wall02 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w03= bpy.props.FloatProperty(name='Wall03 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w04= bpy.props.FloatProperty(name='Wall04 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w05= bpy.props.FloatProperty(name='Wall05 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w06= bpy.props.FloatProperty(name='Wall06 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w07= bpy.props.FloatProperty(name='Wall07 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w08= bpy.props.FloatProperty(name='Wall08 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w09= bpy.props.FloatProperty(name='Wall09 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w10= bpy.props.FloatProperty(name='Wall10 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w11= bpy.props.FloatProperty(name='Wall11 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w12= bpy.props.FloatProperty(name='Wall12 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w13= bpy.props.FloatProperty(name='Wall13 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w14= bpy.props.FloatProperty(name='Wall14 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w15= bpy.props.FloatProperty(name='Wall15 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w16= bpy.props.FloatProperty(name='Wall16 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w17= bpy.props.FloatProperty(name='Wall17 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w18= bpy.props.FloatProperty(name='Wall18 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w19= bpy.props.FloatProperty(name='Wall19 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w20= bpy.props.FloatProperty(name='Wall20 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w21= bpy.props.FloatProperty(name='Wall21 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w22= bpy.props.FloatProperty(name='Wall22 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w23= bpy.props.FloatProperty(name='Wall23 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w24= bpy.props.FloatProperty(name='Wall24 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    w25= bpy.props.FloatProperty(name='Wall25 size',min=-150,max= 150, default= 1,precision=3, description='Length of the wall (negative to reverse direction)')
-    
-    a01 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m01= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f01= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r01= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a02 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m02= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f02= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r02= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a03 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m03= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f03= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r03= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a04 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m04= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f04= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r04= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a05 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m05= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f05= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r05= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a06 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m06= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f06= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r06= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a07 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m07= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f07= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r07= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a08 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m08= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f08= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r08= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a09 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m09= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f09= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r09= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a10 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m10= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f10= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r10= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a11 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m11= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f11= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r11= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a12 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m12= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f12= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r12= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a13 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m13= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f13= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r13= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a14 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m14= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f14= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r14= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a15 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m15= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f15= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r15= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a16 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m16= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f16= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r16= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a17 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m17= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f17= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r17= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a18 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m18= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f18= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r18= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a19 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m19= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f19= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r19= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a20 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m20= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f20= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r20= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a21 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m21= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f21= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r21= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a22 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m22= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f22= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r22= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a23 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m23= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f23= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r23= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a24 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m24= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f24= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r24= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 90,precision=1, description='Wall Angle (-180 to +180)')
-    
-    a25 = bpy.props.BoolProperty(name = "Advanced",description="Advance options.",default = False)
-    m25= bpy.props.FloatProperty(name='',min=0,max= 50, default= 0,precision=3, description='Middle height variation')
-    f25= bpy.props.FloatProperty(name='',min=-1,max= 1, default= 0,precision=3, description='Middle displacement')
-    r25= bpy.props.FloatProperty(name='',min=-180,max= 180, default= 0,precision=1, description='Wall Angle (-180 to +180)')
-
-    h01=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h02=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h03=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h04=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h05=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h06=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h07=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h08=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h09=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h10=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h11=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h12=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h13=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h14=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h15=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h16=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h17=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h18=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h19=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h20=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h21=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h22=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h23=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h24=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-    h25=bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
-                                name="",description="Wall visibility")
-
-
 
     #-----------------------------------------------------
     # Draw (create UI interface)
     #-----------------------------------------------------
     def draw(self, context):
         layout = self.layout
-        space = bpy.context.space_data
-        if (not space.local_view):
-            row=layout.row()
-            row.prop(self,"reset")
-            row=layout.row()
-            row.prop(self,'room_height')
-            row.prop(self,'wall_width')
-            row.prop(self,'inverse')
-        
-            row=layout.row()
-            row.prop(self,'ceiling')
-            row.prop(self,'floor')
-            row.prop(self,'merge')
-                    
-            box=layout.box()
-            # Wall number
-            box.prop(self,'wall_num')
-            if (self.wall_num >= 1): add_wall(self,context,box,self.a01,'01')
-            if (self.wall_num >= 2): add_wall(self,context,box,self.a02,'02')
-            if (self.wall_num >= 3): add_wall(self,context,box,self.a03,'03')
-            if (self.wall_num >= 4): add_wall(self,context,box,self.a04,'04')
-            if (self.wall_num >= 5): add_wall(self,context,box,self.a05,'05')
-            if (self.wall_num >= 6): add_wall(self,context,box,self.a06,'06')
-            if (self.wall_num >= 7): add_wall(self,context,box,self.a07,'07')
-            if (self.wall_num >= 8): add_wall(self,context,box,self.a08,'08')
-            if (self.wall_num >= 9): add_wall(self,context,box,self.a09,'09')
-            if (self.wall_num >= 10): add_wall(self,context,box,self.a10,'10')
-            if (self.wall_num >= 11): add_wall(self,context,box,self.a11,'11')
-            if (self.wall_num >= 12): add_wall(self,context,box,self.a12,'12')
-            if (self.wall_num >= 13): add_wall(self,context,box,self.a13,'13')
-            if (self.wall_num >= 14): add_wall(self,context,box,self.a14,'14')
-            if (self.wall_num >= 15): add_wall(self,context,box,self.a15,'15')
-            if (self.wall_num >= 16): add_wall(self,context,box,self.a16,'16')
-            if (self.wall_num >= 17): add_wall(self,context,box,self.a17,'17')
-            if (self.wall_num >= 18): add_wall(self,context,box,self.a18,'18')
-            if (self.wall_num >= 19): add_wall(self,context,box,self.a19,'19')
-            if (self.wall_num >= 20): add_wall(self,context,box,self.a20,'20')
-            if (self.wall_num >= 21): add_wall(self,context,box,self.a21,'21')
-            if (self.wall_num >= 22): add_wall(self,context,box,self.a22,'22')
-            if (self.wall_num >= 23): add_wall(self,context,box,self.a23,'23')
-            if (self.wall_num >= 24): add_wall(self,context,box,self.a24,'24')
-            if (self.wall_num >= 25): add_wall(self,context,box,self.a25,'25')
-            
-            
-            box=layout.box()
-            box.prop(self,'baseboard')
-            if (self.baseboard==True):
-                row = box.row()
-                row.prop(self,'base_width')
-                row.prop(self,'base_height')
-    
-            box=layout.box()
-            box.prop(self,'crt_mat')
-        else:
-            row=layout.row()
-            row.label("Warning: Operator does not work in local view mode", icon='ERROR')
-
+        row=layout.row()
+        row.label("Use Properties panel (N) to define parms", icon='INFO')
+        row = layout.row(align=False)
+        row.operator("io_import.roomdata", text="Import",icon='COPYDOWN')
         
     #-----------------------------------------------------
     # Execute
     #-----------------------------------------------------
     def execute(self, context):
         if (bpy.context.mode == "OBJECT"):
-            if (self.reset == '1'):
-                reset_room(self)
-            
-            
-            create_room_mesh(self,context)
+            create_room(self,context)
             return {'FINISHED'}
         else:
             self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
             return {'CANCELLED'}
 
-#-----------------------------------------------------
-# Add wall parameters
-#-----------------------------------------------------
-def add_wall(self,context,box,var,num):
-    row = box.row()
-    row.prop(self,'w' + num)
-    row.prop(self,'a' + num)
-    if (var == True):
-        srow = row.row()
-        srow.prop(self,'r' + num)
-        srow.prop(self,'h' + num)
-        srow.prop(self,'m' + num)
-        srow.prop(self,'f' + num)
- 
-
-
 #------------------------------------------------------------------------------
-# Generate mesh data
-# All custom values are passed using self container (self.myvariable)
+# Create main object for the room. The other objects of room will be children of this.
 #------------------------------------------------------------------------------
-def create_room_mesh(self,context):
-    # deactivate others
+def create_room(self,context):
+    # deselect all objects
     for o in bpy.data.objects:
-        if (o.select == True):
-            o.select = False
-    bpy.ops.object.select_all(False)
-    # Create room
-    myRoom = create_room(self,context,"Room",get_BlendUnits(self.room_height))
-    myRoom.select = True
-    bpy.context.scene.objects.active = myRoom
+        o.select = False
+
+    # we create main object and mesh for walls
+    RoomMesh = bpy.data.meshes.new("Room")
+    RoomObject = bpy.data.objects.new("Room", RoomMesh)
+    RoomObject.location = bpy.context.scene.cursor_location
+    bpy.context.scene.objects.link(RoomObject)
+    RoomObject.RoomGenerator.add()
+    RoomObject.RoomGenerator[0].walls.add()
+
+    # we shape the walls and create other objects as children of 'RoomObject'.
+    shape_walls_and_create_children(RoomObject)
+
+    # we select, and activate, main object for the room.
+    RoomObject.select = True
+    bpy.context.scene.objects.active = RoomObject
+
+#-----------------------------------------------------
+# Verify if solidify exist
+#-----------------------------------------------------
+def isSolidify(myObject):
+    flag = False
+    for mod in myObject.modifiers:
+            if mod.type == 'SOLIDIFY':
+                flag = True
+                break
+    return flag        
+
+#------------------------------------------------------------------------------
+# Update wall mesh and children objects (baseboard, floor and ceiling).
+#------------------------------------------------------------------------------
+def update_room(self,context):
+    # When we update, the active object is the main object of the room.
+    o=bpy.context.active_object
+    # Now we deselect that room object to not delete it.
+    o.select=False
+    # Remove walls (mesh of room/active object),
+    o.data.user_clear()
+    bpy.data.meshes.remove(o.data)
+    # and we create a new mesh for the walls:
+    RoomMesh = bpy.data.meshes.new("Room")
+    o.data = RoomMesh
+    o.data.use_fake_user = True
+    # deselect all objects
+    for obj in bpy.data.objects:
+        obj.select = False
+    # Remove children created by this addon:
+    for child in o.children:
+        try:
+            if child["archimesh.room_object"] == True:
+                try:
+                    # remove child relationship
+                    for grandchild in child.children:
+                            grandchild.parent = None
+                    # remove modifiers
+                    for mod in child.modifiers:
+                        bpy.ops.object.modifier_remove(mod)
+                except:
+                    x = 1 # dummy    
+                # clear data
+                child.data.user_clear()
+                bpy.data.meshes.remove(child.data)
+                child.select=True
+                bpy.ops.object.delete()
+        except:    
+            x = 1 # dummy    
+    # Finally we create all that again (except main object),
+    shape_walls_and_create_children(o,True)
+    # and select, and activate, the main object of the room.
+    o.select = True
+    bpy.context.scene.objects.active = o
+
+#-----------------------------------------------------
+# Move Solidify to Top
+#-----------------------------------------------------
+def moveToTopSolidify(myObject):
+    mymod = None
+    for mod in myObject.modifiers:
+        if mod.type == 'SOLIDIFY':
+            mymod = mod
+            
+    if mymod != None:
+        while myObject.modifiers[0] != mymod: 
+            bpy.ops.object.modifier_move_up(modifier=mymod.name)            
+
+#------------------------------------------------------------------------------
+# Generate walls, baseboard, floor, ceiling and materials.
+# For walls, it only shapes mesh and creates modifier solidify (the modifier, only the first time).
+# And, for the others, it creates object and mesh.
+#------------------------------------------------------------------------------
+def shape_walls_and_create_children(myRoom,update=False):
+    rp = myRoom.RoomGenerator[0] # "rp" means "room properties".
+    # Create the walls (only mesh, because the object is 'myRoom', created before).
+    create_walls(rp,myRoom.data,get_BlendUnits(rp.room_height))
     # Mark Seams
     select_vertices(myRoom,[0,1])   
     mark_seam(myRoom) 
@@ -551,18 +398,41 @@ def create_room_mesh(self,context):
     unwrap_mesh(myRoom)
     
     remove_doubles(myRoom)
-    set_normals(myRoom,not self.inverse) # inside/outside
+    set_normals(myRoom,not rp.inverse) # inside/outside
 
-    if (self.wall_width > 0.0):
-        set_modifier_solidify(myRoom,get_BlendUnits(self.wall_width))
+    if (rp.wall_width > 0.0):
+        if (False == update or isSolidify(myRoom) == False):
+            set_modifier_solidify(myRoom,get_BlendUnits(rp.wall_width))
+        else:
+            for mod in myRoom.modifiers:
+                if (mod.type == 'SOLIDIFY'):
+                    mod.thickness = rp.wall_width
+        # Move to Top SOLIDIFY            
+        moveToTopSolidify(myRoom)
+                    
+    else: # clear not used SOLIDIFY
+        for mod in myRoom.modifiers:
+            if (mod.type == 'SOLIDIFY'):
+                myRoom.modifiers.remove(mod)
+                        
         
     # Create baseboard
-    if (self.baseboard):
-        myBase = create_room(self,context,"Baseboard",get_BlendUnits(self.base_height),True)
-        set_normals(myBase,self.inverse) # inside/outside room
-        if (self.base_width > 0.0):
-            set_modifier_solidify(myBase,get_BlendUnits(self.base_width))
-        myBase.parent = myRoom    
+    if (rp.baseboard):
+        BaseboardMesh = bpy.data.meshes.new("Baseboard")
+        myBase = bpy.data.objects.new("Baseboard", BaseboardMesh)
+        myBase.location = (0,0,0)
+        bpy.context.scene.objects.link(myBase)
+        myBase.parent = myRoom
+        myBase.select = True
+        myBase["archimesh.room_object"] = True
+        myBase["archimesh.room_baseboard"] = True
+        
+        create_walls(rp,BaseboardMesh,get_BlendUnits(rp.base_height),True)
+        set_normals(myBase,rp.inverse) # inside/outside room
+        if (rp.base_width > 0.0):
+            set_modifier_solidify(myBase,get_BlendUnits(rp.base_width))
+            # Move to Top SOLIDIFY            
+            moveToTopSolidify(myBase)
         # Mark Seams
         select_vertices(myBase,[0,1])   
         mark_seam(myBase) 
@@ -570,415 +440,96 @@ def create_room_mesh(self,context):
         unwrap_mesh(myBase)
         
     # Create floor
-    if (self.floor):
-        myFloor = create_floor(self,context,"Floor",myRoom)
+    if (rp.floor):
+        myFloor = create_floor(rp,"Floor",myRoom)
+        myFloor["archimesh.room_object"] = True
         myFloor.parent = myRoom    
         # Unwrap
         unwrap_mesh(myFloor)
 
     # Create ceiling
-    if (self.ceiling):
-        myCeiling = create_floor(self,context,"Ceiling",myRoom)
+    if (rp.ceiling):
+        myCeiling = create_floor(rp,"Ceiling",myRoom)
+        myCeiling["archimesh.room_object"] = True
         myCeiling.parent = myRoom    
         # Unwrap
         unwrap_mesh(myCeiling)
 
     # Create materials        
-    if (self.crt_mat):
+    if (rp.crt_mat):
         # Wall material (two faces)
         mat = create_diffuse_material("Wall_material",False,0.765, 0.650, 0.588,0.8,0.621,0.570,0.1,True)
         set_material(myRoom,mat)
+
         # Baseboard material
-        if (self.baseboard):
+        if (rp.baseboard):
             mat = create_diffuse_material("Baseboard_material",False,0.8, 0.8, 0.8)
             set_material(myBase,mat)
-        
+
         # Ceiling material
-        if (self.ceiling):
+        if (rp.ceiling):
             mat = create_diffuse_material("Ceiling_material",False,0.95, 0.95, 0.95)
             set_material(myCeiling,mat)
-            
+
         # Floor material    
-        if (self.floor):
+        if (rp.floor):
             mat = create_brick_material("Floor_material",False,0.711, 0.668, 0.668,0.8,0.636,0.315)
             set_material(myFloor,mat)
-          
-    bpy.ops.object.select_all(False)    
-    myRoom.select = True
-    bpy.context.scene.objects.active = myRoom
-            
-    return
-#------------------------------------------------------------------------------
-# Verify visibility of walls
-#------------------------------------------------------------------------------
-def check_visibility(h,base):
-    # Visible
-    if (h == '0'):
-        return True
-    # Wall
-    if (h == '2'):
-        if (base == True):
-            return False
-        else:
-            return True
-    # Baseboard
-    if (h == '1'):
-        if (base == True):
-            return True
-        else:
-            return False
-    # Hidden
-    if (h == '3'):
-        return False
+
 
 #------------------------------------------------------------------------------
-# Create Room/baseboard
-# Some custom values are passed using self container (self.myvariable)
+# Create walls or baseboard (indicated with baseboard parameter).
+# Some custom values are passed using the rp ("room properties" group) parameter (rp.myvariable).
 #------------------------------------------------------------------------------
-def create_room(self,context,objName,height,baseboard = False):
-
-    myVertex = []
+def create_walls(rp,mymesh,height,baseboard=False):
+    myVertex = [(0.0,0.0,height),(0.0,0.0,0.0)]
     myFaces = []
     lastFace = 0
-    #---------------------------------
-    # Horizontal (First)
-    #---------------------------------
-    if (self.wall_num >= 1):
-        # Calculate size using angle
-        sizeX = math.cos(math.radians(self.r01)) * get_BlendUnits(self.w01)
-        sizeY = math.sin(math.radians(self.r01)) * get_BlendUnits(self.w01)
+    lastX = lastY = 0
 
-        if (self.a01 == False or baseboard == True):
-            myVertex.extend([(0.0,0.0,0.0),(0.0,0.0,height)
-                             ,(sizeX,sizeY,height)
-                             ,(sizeX,sizeY,0.0)])
-            if (check_visibility(self.h01,baseboard)):
-                myFaces.extend([(0,1,2,3)])
-            lastFace = 2
-            lastX = sizeX
-            lastY = sizeY
+    # Iterate the walls
+    for i in range(0,rp.wall_num):
+        if (0 == i):
+            prv = False
         else:
-            mid = get_BlendUnits(self.w01 / 2 + ((self.w01 / 2) * self.f01))
-            midX = math.cos(math.radians(self.r01)) * mid
-            midY = math.sin(math.radians(self.r01)) * mid
+            prv = rp.walls[i-1].a and not rp.walls[i-1].curved
             
-            # first
-            myVertex.extend([(0.0,0.0,0.0)
-                             ,(0.0,0.0,height)
-                             ,(midX,midY,height + get_BlendUnits(self.m01))
-                             ,(midX,midY,0.0)])
-            if (math.fabs(self.f01) != 1):
-                if (check_visibility(self.h01,baseboard)):
-                    myFaces.extend([(0,1,2,3)])  
-            # second
-            myVertex.extend([(sizeX,sizeY,0.0),(sizeX,sizeY,height)])
-            if (check_visibility(self.h01,baseboard)):
-                if (math.fabs(self.f01) != 1): 
-                    myFaces.extend([(2,3,4,5)])
-                else:    
-                    myFaces.extend([(0,1,5,4),(1,2,5)])
-            
-            lastFace = 4
-                
-            lastX = sizeX
-            lastY = sizeY
-        
-    #---------------------------------
-    # Vertical
-    #---------------------------------
-    if (self.wall_num >= 2):
-        myDat = make_wall(self.a01,
-                              self.a02,self.w02,self.m02,self.f02
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r02,self.h02)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Horizontal
-    if (self.wall_num >= 3):
-        myDat = make_wall(self.a02,
-                              self.a03,self.w03,self.m03,self.f03
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r03,self.h03)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Vertical
-    if (self.wall_num >= 4):
-        myDat = make_wall(self.a03,
-                              self.a04,self.w04,self.m04,self.f04
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r04,self.h04)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Horizontal
-    if (self.wall_num >= 5):
-        myDat = make_wall(self.a04,
-                              self.a05,self.w05,self.m05,self.f05
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r05,self.h05)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Vertical
-    if (self.wall_num >= 6):
-        myDat = make_wall(self.a05,
-                              self.a06,self.w06,self.m06,self.f06
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r06,self.h06)
+        myDat = make_wall(prv,rp.walls[i],baseboard,lastFace,
+                          lastX,lastY,height,myVertex,myFaces)
         lastX = myDat[0]
         lastY = myDat[1]
         lastFace = myDat[2]
 
-    # Horizontal
-    if (self.wall_num >= 7):
-        myDat = make_wall(self.a06,
-                              self.a07,self.w07,self.m07,self.f07
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r07,self.h07)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Vertical
-    if (self.wall_num >= 8):
-        myDat = make_wall(self.a07,
-                              self.a08,self.w08,self.m08,self.f08
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r08,self.h08)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Horizontal
-    if (self.wall_num >= 9):
-        myDat = make_wall(self.a08,
-                              self.a09,self.w09,self.m09,self.f09
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r09,self.h09)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Vertical
-    if (self.wall_num >= 10):
-        myDat = make_wall(self.a09,
-                              self.a10,self.w10,self.m10,self.f10
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r10,self.h10)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Horizontal
-    if (self.wall_num >= 11):
-        myDat = make_wall(self.a10,
-                              self.a11,self.w11,self.m11,self.f11
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r11,self.h11)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Vertical
-    if (self.wall_num >= 12):
-        myDat = make_wall(self.a11,
-                              self.a12,self.w12,self.m12,self.f12
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r12,self.h12)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Horizontal
-    if (self.wall_num >= 13):
-        myDat = make_wall(self.a12,
-                              self.a13,self.w13,self.m13,self.f13
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r13,self.h13)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Vertical
-    if (self.wall_num >= 14):
-        myDat = make_wall(self.a13,
-                              self.a14,self.w14,self.m14,self.f14
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r14,self.h14)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Horizontal
-    if (self.wall_num >= 15):
-        myDat = make_wall(self.a14,
-                              self.a15,self.w15,self.m15,self.f15
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r15,self.h15)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Vertical
-    if (self.wall_num >= 16):
-        myDat = make_wall(self.a15,
-                              self.a16,self.w16,self.m16,self.f16
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r16,self.h16)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Horizontal
-    if (self.wall_num >= 17):
-        myDat = make_wall(self.a16,
-                              self.a17,self.w17,self.m17,self.f17
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r17,self.h17)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
-    # Vertical
-    if (self.wall_num >= 18):
-        myDat = make_wall(self.a17,
-                              self.a18,self.w18,self.m18,self.f18
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r18,self.h18)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Horizontal
-    if (self.wall_num >= 19):
-        myDat = make_wall(self.a18,
-                              self.a19,self.w19,self.m19,self.f19
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r19,self.h19)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Vertical
-    if (self.wall_num >= 20):
-        myDat = make_wall(self.a19,
-                              self.a20,self.w20,self.m20,self.f20
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r20,self.h20)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Horizontal
-    if (self.wall_num >= 21):
-        myDat = make_wall(self.a20,
-                              self.a21,self.w21,self.m21,self.f21
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r21,self.h21)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Vertical
-    if (self.wall_num >= 22):
-        myDat = make_wall(self.a21,
-                              self.a22,self.w22,self.m22,self.f22
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r22,self.h22)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Horizontal
-    if (self.wall_num >= 23):
-        myDat = make_wall(self.a22,
-                              self.a23,self.w23,self.m23,self.f23
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r23,self.h23)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Vertical
-    if (self.wall_num >= 24):
-        myDat = make_wall(self.a23,
-                              self.a24,self.w24,self.m24,self.f24
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r24,self.h24)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-
-    # Horizontal
-    if (self.wall_num >= 25):
-        myDat = make_wall(self.a24,
-                              self.a25,self.w25,self.m25,self.f25
-                              ,baseboard,lastFace
-                              ,lastX,lastY,height,myVertex,myFaces,self.r25,self.h25)
-        lastX = myDat[0]
-        lastY = myDat[1]
-        lastFace = myDat[2]
-        
     # Close room
-    if (self.merge == True):
-        if (baseboard == False):     
-            if ((self.wall_num == 1 and self.a01 == True)
-            or (self.wall_num == 2 and self.a02 == True)
-            or (self.wall_num == 3 and self.a03 == True)
-            or (self.wall_num == 4 and self.a04 == True)
-            or (self.wall_num == 5 and self.a05 == True)
-            or (self.wall_num == 6 and self.a06 == True)
-            or (self.wall_num == 7 and self.a07 == True)
-            or (self.wall_num == 8 and self.a08 == True)
-            or (self.wall_num == 9 and self.a09 == True)
-            or (self.wall_num == 10 and self.a10 == True)
-            or (self.wall_num == 11 and self.a11 == True)
-            or (self.wall_num == 12 and self.a12 == True)
-            or (self.wall_num == 13 and self.a13 == True)
-            or (self.wall_num == 14 and self.a14 == True)
-            or (self.wall_num == 15 and self.a15 == True)
-            or (self.wall_num == 16 and self.a16 == True)
-            or (self.wall_num == 17 and self.a17 == True)
-            or (self.wall_num == 18 and self.a18 == True)
-            or (self.wall_num == 19 and self.a19 == True)
-            or (self.wall_num == 20 and self.a20 == True)
-            or (self.wall_num == 21 and self.a21 == True)
-            or (self.wall_num == 22 and self.a22 == True)
-            or (self.wall_num == 23 and self.a23 == True)
-            or (self.wall_num == 24 and self.a24 == True)
-            or (self.wall_num == 25 and self.a25 == True)):
-                myFaces.extend([(0,1,lastFace + 1, lastFace)])
-            else:   
-                myFaces.extend([(0,1,lastFace, lastFace + 1)])
-        else:
-            myFaces.extend([(0,1,self.wall_num * 2, self.wall_num * 2 + 1)])   
-        
-        
-    mymesh = bpy.data.meshes.new(objName)
-    myobject = bpy.data.objects.new(objName, mymesh)
-    
-    if (baseboard == False):
-        myobject.location = bpy.context.scene.cursor_location
-    else:
-        myobject.location = (0,0,0)
-        
-    bpy.context.scene.objects.link(myobject)
-    
+    if (rp.merge == True):
+        if (rp.walls[rp.wall_num-1].a != "1"):
+            myFaces.extend([(0,1,lastFace + 1, lastFace)])
+        else:   
+            myFaces.extend([(0,1,lastFace, lastFace + 1)])
+
     mymesh.from_pydata(myVertex, [], myFaces)
     mymesh.update(calc_edges=True)
-    
-    return myobject
+
+
 #------------------------------------------------------------------------------
 # Make a Wall
+#   prv: If previous wall has 'curved' activate.
+#   lastFace: Number of faces of all before walls.
+#   lastX: X position of the end of the last wall.
+#   lastY: Y position of the end of the last wall.
+#   height: Height of the last wall, without peak.
 #------------------------------------------------------------------------------
-def make_wall(prv,advance,size,over,factor,baseboard,lastFace,lastX,lastY,height,myVertex,myFaces,angle,hide):
-    
+def make_wall(prv,wall,baseboard,lastFace,lastX,lastY,height,myVertex,myFaces):
+    #   size: Length of the wall.
+    #   over: Height of the peak from "height".
+    #   factor: Displacement of the peak (between -1 and 1; 0 is the middle of the wall).
+    advanced = wall.a	
+    size = wall.w
+    over = wall.m	
+    factor = wall.f
+    angle = wall.r	
+    hide = wall.h
+
     # if angle negative, calculate real
     # use add because the angle is negative 
     if (angle < 0):
@@ -992,61 +543,133 @@ def make_wall(prv,advance,size,over,factor,baseboard,lastFace,lastX,lastY,height
     sizeY = math.sin(math.radians(angle)) * size
     
     # Create faces
-    if (advance == False or baseboard == True):
-        myVertex.extend([(lastX + sizeX,lastY + sizeY,height)
-                         ,(lastX + sizeX,lastY + sizeY,0.0)])
-        if (check_visibility(hide,baseboard)):
-            if (prv == False or baseboard == True):
-                myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)]) # no advance
-            else:
-                myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)]) # advance
-            
-        lastFace = lastFace + 2
+    if (False == advanced or True == baseboard):
+        # Cases of this first option: Baseboard or wall without peak and without curve.
+        if (True == baseboard and True == advanced and True == wall.curved):
+            (myVertex, myFaces, sizeX, sizeY, lastFace) = make_curved_wall(myVertex, myFaces, size, angle,
+                                                             lastX, lastY, height, lastFace,
+                                                             wall.curve_factor, int(wall.curve_arc_deg),
+                                                             int(wall.curve_arc_deg/wall.curve_steps),
+                                                             hide, baseboard)
+        else:
+            myVertex.extend([(lastX + sizeX,lastY + sizeY,height),
+                             (lastX + sizeX,lastY + sizeY,0.0)])
+            if (check_visibility(hide,baseboard)):
+                if (prv == False or baseboard == True):
+                    # Previous no advance or advance with curve
+                    myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)])
+                else:
+                    # Previous advance without curve
+                    myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)])
+            lastFace = lastFace + 2
     else:
-        mid = size / 2 + ((size / 2) * factor)
-        midX = math.cos(math.radians(angle)) * mid
-        midY = math.sin(math.radians(angle)) * mid
-        # first
-        myVertex.extend([(lastX + midX,lastY + midY,height + over)
-                         ,(lastX + midX,lastY + midY,0.0)])
-        if (check_visibility(hide,baseboard)):
-            if (math.fabs(factor) != 1):
-                if (prv == False):
-                    myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)]) # no advance
-                else:
-                    myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)]) # advance
-        # second
-        myVertex.extend([(lastX + sizeX,lastY + sizeY,0.0)
-                         ,(lastX + sizeX,lastY + sizeY,height)])
-        if (check_visibility(hide,baseboard)):
-            if (math.fabs(factor) != 1): 
-                myFaces.extend([(lastFace + 2,lastFace + 3,lastFace + 4,lastFace+ 5)])
-            else:   
-                if (prv == False):
-                    myFaces.extend([(lastFace, lastFace + 5, lastFace + 4, lastFace + 1)
-                                   ,(lastFace, lastFace + 2, lastFace + 5)])
-                else:
-                    myFaces.extend([(lastFace, lastFace + 4, lastFace + 5, lastFace + 1)
-                               ,(lastFace + 1, lastFace + 2, lastFace + 5)])
+        # Case of this second option: Wall with advanced features (orientation, visibility and peak or curve).
+        # Orientation and visibility options ('angle' and 'hide' variables) are only visible in panel
+        # with advanced features, but are taken in account in any case.
+        if (True == wall.curved):
+            # Wall with curve and without peak.
+            (myVertex, myFaces, sizeX, sizeY, lastFace) = make_curved_wall(myVertex, myFaces, size, angle,
+                                                             lastX, lastY, height, lastFace,
+                                                             wall.curve_factor, int(wall.curve_arc_deg),
+                                                             int(wall.curve_arc_deg/wall.curve_steps),
+                                                             hide, baseboard)
+        else:
+            # Wall with peak and without curve.
+            mid = size / 2 + ((size / 2) * factor)
+            midX = math.cos(math.radians(angle)) * mid
+            midY = math.sin(math.radians(angle)) * mid
+            # first face
+            myVertex.extend([(lastX + midX,lastY + midY,height + over)
+                             ,(lastX + midX,lastY + midY,0.0)])
+            if (check_visibility(hide,baseboard)):
+                if (math.fabs(factor) != 1):
+                    if (prv == False):
+                        # Previous no advance or advance with curve
+                        myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)])
+                    else:
+                        # Previous advance without curve
+                        myFaces.extend([(lastFace,lastFace + 1,lastFace + 2,lastFace + 3)])
+            # second face
+            myVertex.extend([(lastX + sizeX,lastY + sizeY,0.0)
+                             ,(lastX + sizeX,lastY + sizeY,height)])
+            if (check_visibility(hide,baseboard)):
+                if (math.fabs(factor) != 1):
+                    myFaces.extend([(lastFace + 2,lastFace + 3,lastFace + 4,lastFace+ 5)])
+                else:   
+                    if (prv == False):
+                        myFaces.extend([(lastFace, lastFace + 5, lastFace + 4, lastFace + 1),
+                                        (lastFace, lastFace + 2, lastFace + 5)])
+                    else:
+                        myFaces.extend([(lastFace, lastFace + 4, lastFace + 5, lastFace + 1),
+                                        (lastFace + 1, lastFace + 2, lastFace + 5)])
             
-        lastFace = lastFace + 4
+            lastFace = lastFace + 4
         
     lastX = lastX + sizeX
     lastY = lastY + sizeY
-    
         
     return (lastX,lastY,lastFace)
 
+
 #------------------------------------------------------------------------------
-# Create Floor or Ceiling
+# Verify visibility of walls
 #------------------------------------------------------------------------------
-def create_floor(self,context,typ,myRoom):
+def check_visibility(h,base):
+    # Visible
+    if h == '0':
+        return True
+    # Wall
+    if h == '2':
+        if base == True:
+            return False
+        else:
+            return True
+    # Baseboard
+    if h == '1':
+        if base == True:
+            return True
+        else:
+            return False
+    # Hidden
+    if h == '3':
+        return False
+
+
+#------------------------------------------------------------------------------
+# Create a curved wall.
+#------------------------------------------------------------------------------
+def make_curved_wall(myVertex, myFaces, size, wall_angle, lastX, lastY, height,
+                     lastFace, curve_factor, arc_angle, step_angle, hide, baseboard):
+    # Calculate size using angle
+    sizeX = math.cos(math.radians(wall_angle)) * size
+    sizeY = math.sin(math.radians(wall_angle)) * size
+
+    for step in range(0,arc_angle+step_angle,step_angle):
+        curveX = sizeX/2 - math.cos(math.radians(step+wall_angle)) * size/2
+        curveY = sizeY/2 - math.sin(math.radians(step+wall_angle)) * size/2
+        curveY = curveY * curve_factor
+        myVertex.extend([(lastX + curveX, lastY + curveY, height),
+                         (lastX + curveX, lastY + curveY, 0.0)])
+        if (check_visibility(hide,baseboard)):
+            myFaces.extend([(lastFace,lastFace + 2,lastFace + 3,lastFace + 1)])
+        lastFace = lastFace + 2
+    return (myVertex, myFaces, curveX, curveY, lastFace)
+
+
+#------------------------------------------------------------------------------
+# Create floor or ceiling (create object and mesh)
+# Parameters:
+#   rm: "room properties" group
+#   typ: Name of new object and mesh ('Floor' or 'Ceiling')
+#   myRoom: Main object for the room
+#------------------------------------------------------------------------------
+def create_floor(rp,typ,myRoom):
     bpy.context.scene.objects.active = myRoom
 
     myVertex = []
     myFaces = []
     verts = []
-    
+
     obverts = bpy.context.active_object.data.vertices
     for vertex in obverts:
         verts.append(tuple(vertex.co))
@@ -1054,36 +677,182 @@ def create_floor(self,context,typ,myRoom):
     i = 0 
     for e in verts:
         if (typ == "Floor"):
-            if(e[2] == 0.0):
+            if (e[2] == 0.0):
                 myVertex.extend([(e[0],e[1],e[2])])
                 i = i + 1    
         else: # ceiling
-            if(round(e[2],5) == round(get_BlendUnits(self.room_height),5)):
+            if (round(e[2],5) == round(get_BlendUnits(rp.room_height),5)):
                 myVertex.extend([(e[0],e[1],e[2])])    
                 i = i + 1
-    
+
     # Create faces
     fa = []
     for f in range(0,i):
         fa.extend([f])
-                        
+
     myFaces.extend([fa])
-        
-        
+
     mymesh = bpy.data.meshes.new(typ)
     myobject = bpy.data.objects.new(typ, mymesh)
-    
+
     myobject.location = (0,0,0)
     bpy.context.scene.objects.link(myobject)
-    
+
     mymesh.from_pydata(myVertex, [], myFaces)
     mymesh.update(calc_edges=True)
-    
+
     return myobject
 
+
+#------------------------------------------------------------------
+# Define property group class to create, or modify, room walls.
+#------------------------------------------------------------------
+class WallProperties(bpy.types.PropertyGroup):
+    w = bpy.props.FloatProperty(name='Length',min=-150,max=150,default=1,precision=3,description='Length of the wall (negative to reverse direction)',update=update_room)
+
+    a = bpy.props.BoolProperty(name="Advance",description="Define advance parameters of the wall",default=False,update=update_room)
+
+    curved = bpy.props.BoolProperty(name="Curved",description="Enable curved wall parameters",default=False,update=update_room)
+    curve_factor = bpy.props.FloatProperty(name='Factor',min=-5,max=5,default=1,precision=1,description='Curvature variation.',update=update_room)
+    curve_arc_deg = bpy.props.FloatProperty(name='Degrees',min=0,max=359,default=180,precision=1,description='Degrees of the curve arc',update=update_room)
+    curve_steps = bpy.props.IntProperty(name='Steps',min=2,max= 50,default=18,description='Curve steps',update=update_room)
+    
+    m = bpy.props.FloatProperty(name='Peak',min=0,max= 50,default=0,precision=3,description='Middle height variation',update=update_room)
+    f = bpy.props.FloatProperty(name='Factor',min=-1,max= 1,default=0,precision=3,description='Middle displacement',update=update_room)
+    r = bpy.props.FloatProperty(name='Angle',min=-180,max=180,default=0,precision=1,description='Wall Angle (-180 to +180)',update=update_room)
+
+    h = bpy.props.EnumProperty(items = (('0',"Visible",""),('1',"Baseboard",""),('2',"Wall",""),('3',"Hidden","")),
+                                 name="",description="Wall visibility",update=update_room)
+
+bpy.utils.register_class(WallProperties)
+
+
+#------------------------------------------------------------------
+# Add a new room wall.
+# First add a parameter group for that new wall, and then update the room.
+#------------------------------------------------------------------
+def add_room_wall(self,context):
+    rp=context.object.RoomGenerator[0]
+    for cont in range(len(rp.walls)-1,rp.wall_num):
+        rp.walls.add()
+        # by default, we alternate the direction of the walls.
+        if (1 == cont % 2):
+            rp.walls[cont].r = 90
+    update_room(self,context)
+
+#------------------------------------------------------------------
+# Define property group class to create or modify a rooms.
+#------------------------------------------------------------------
+class RoomProperties(bpy.types.PropertyGroup):
+    room_height = bpy.props.FloatProperty(name='Height',min=0.001,max=50,default= 2.4,precision=3,description='Room height',update=update_room)
+    wall_width = bpy.props.FloatProperty(name='Thickness',min=0.000,max=10,default= 0.0,precision=3,description='Thickness of the walls',update=update_room)
+    inverse = bpy.props.BoolProperty(name="Inverse",description="Inverse normals to outside.",default=False,update=update_room)
+    crt_mat = bpy.props.BoolProperty(name="Create default Cycles materials",description="Create default materials for Cycles render.",default = True,update=update_room)
+
+    wall_num = bpy.props.IntProperty(name='Number of Walls',min=1,max=50,default=1,description='Number total of walls in the room',update=add_room_wall)
+    
+    baseboard = bpy.props.BoolProperty(name="Baseboard",description="Create a baseboard automatically.",default=True,update=update_room)
+
+    base_width = bpy.props.FloatProperty(name='Width',min=0.001,max= 10,default=0.015,precision=3,description='Baseboard width',update=update_room)
+    base_height = bpy.props.FloatProperty(name='Height',min=0.05,max= 20,default=0.12,precision=3,description='Baseboard height',update=update_room)
+    
+    ceiling = bpy.props.BoolProperty(name="Ceiling",description="Create a ceiling.",default = False,update=update_room)
+    floor = bpy.props.BoolProperty(name="Floor",description="Create a floor automatically.",default=False,update=update_room)
+
+    merge = bpy.props.BoolProperty(name="Close walls",description="Close walls to create a full closed room.",default=False,update=update_room)
+
+    walls = bpy.props.CollectionProperty(type=WallProperties)
+
+bpy.utils.register_class(RoomProperties)
+bpy.types.Object.RoomGenerator=bpy.props.CollectionProperty(type=RoomProperties)
+
+
+#-----------------------------------------------------
+# Add wall parameters to the panel.
+#-----------------------------------------------------
+def add_wall(idx,box,wall):
+    box.label("Wall " + str(idx))
+    row = box.row()
+    row.prop(wall, 'w')
+    row.prop(wall, 'a')
+    #row.prop(wall, 'curved')
+    if wall.a == True:
+        srow = box.row()
+        srow.prop(wall, 'r')
+        srow.prop(wall, 'h')
+        
+        srow = box.row()
+        srow.prop(wall, 'curved')
+        
+        if wall.curved == False:
+            srow.prop(wall, 'm')
+            srow.prop(wall, 'f')
+            
+        if wall.curved == True:
+            srow.prop(wall, 'curve_factor')
+            srow.prop(wall, 'curve_arc_deg')
+            srow.prop(wall, 'curve_steps')
+
+
+#------------------------------------------------------------------
+# Define panel class to modify rooms.
+#------------------------------------------------------------------
+class RoomGeneratorPanel(bpy.types.Panel):
+    bl_idname      ="OBJECT_PT_room_generator"
+    bl_label       ="Room Generator"
+    bl_space_type  ='VIEW_3D'
+    bl_region_type ='UI'
+    bl_category = 'Archimesh'
+
+    #-----------------------------------------------------
+    # Draw (create UI interface)
+    #-----------------------------------------------------
+    def draw(self, context):
+        o = context.object
+        # If the selected object didn't be created with the group 'RoomGenerator', this panel is not created.
+        try:
+            if ('RoomGenerator' not in o):
+                return
+        except:
+            return
+            
+        layout = self.layout
+        if (bpy.context.mode == 'EDIT_MESH'):
+            layout.label('Warning: Operator does not work in edit mode.', icon='ERROR')
+        else:
+            room = o.RoomGenerator[0]
+            row = layout.row()
+            row.prop(room,'room_height')
+            row.prop(room,'wall_width')
+            row.prop(room,'inverse')
+
+            row = layout.row()
+            row.prop(room,'ceiling')
+            row.prop(room,'floor')
+            if room.wall_num > 1:
+                row.prop(room,'merge')
+
+            # Wall number
+            row = layout.row()
+            row.prop(room,'wall_num')
+
+            # Add menu for walls
+            if room.wall_num > 0:
+                for wall_index in range(0,room.wall_num):
+                    box = layout.box()
+                    add_wall(wall_index + 1,box,room.walls[wall_index])
+
+            box = layout.box()
+            box.prop(room,'baseboard')
+            if (room.baseboard == True):
+                row = box.row()
+                row.prop(room,'base_width')
+                row.prop(room,'base_height')
+
+            box = layout.box()
+            box.prop(room,'crt_mat')
 #----------------------------------------------
 # Code to run alone the script
 #----------------------------------------------
 if __name__ == "__main__":
-    create_mesh(0)
     print("Executed")

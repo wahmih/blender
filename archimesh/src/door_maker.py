@@ -36,6 +36,7 @@ class DOOR(bpy.types.Operator):
     bl_idname = "mesh.archimesh_door"
     bl_label = "Door"
     bl_description = "Door Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     # Define properties
@@ -108,7 +109,49 @@ class DOOR(bpy.types.Operator):
     #-----------------------------------------------------
     def execute(self, context):
         if (bpy.context.mode == "OBJECT"):
-            create_door_mesh(self,context)
+            myFrame = create_door_mesh(self,context)
+            #-------------------------
+            # Create empty and parent
+            #-------------------------
+            bpy.ops.object.empty_add(type='PLAIN_AXES')
+            myEmpty = bpy.data.objects[bpy.context.active_object.name]
+            myEmpty.location = bpy.context.scene.cursor_location
+            myEmpty.name = "Door_Group"
+            myFrame.location = (0,0,0)
+            myFrame.parent = myEmpty 
+            myFrame["archimesh.hole_enable"] = True
+            # Create control box to open wall holes
+            gap = 0.002
+            myCtrl = create_control_box("CTRL_Hole"
+                               ,self.frame_width-gap,self.frame_thick,self.frame_height)
+            # Add custom property to detect Controller
+            myCtrl["archimesh.ctrl_hole"] = True
+            
+            set_normals(myCtrl)
+            myCtrl.parent = myEmpty
+            myCtrl.location.x = 0
+            myCtrl.location.y = -self.frame_thick/3
+            myCtrl.location.z = -gap
+            myCtrl.draw_type = 'WIRE'
+            myCtrl.hide = True
+            myCtrl.hide_render = True
+            
+            # Create control box for baseboard
+            myCtrlBase = create_control_box("CTRL_Baseboard"
+                               ,self.frame_width,0.40,0.40
+                               ,False)
+            # Add custom property to detect Controller
+            myCtrlBase["archimesh.ctrl_base"] = True
+            
+            set_normals(myCtrlBase)
+            myCtrlBase.parent = myEmpty
+            myCtrlBase.location.x = 0
+            myCtrlBase.location.y = -0.15 - (self.frame_thick / 3)
+            myCtrlBase.location.z = -0.10
+            myCtrlBase.draw_type = 'WIRE'
+            myCtrlBase.hide = True
+            myCtrlBase.hide_render = True
+
             return {'FINISHED'}
         else:
             self.report({'WARNING'}, "Archimesh: Option only valid in Object mode")
@@ -152,7 +195,8 @@ def create_door_mesh(self,context):
     bpy.ops.object.select_all(False)    
     myFrame.select = True
     bpy.context.scene.objects.active = myFrame
-    return
+    
+    return myFrame
 #------------------------------------------------------------------------------
 # Make one door
 # 
@@ -2014,6 +2058,42 @@ def handle_model_04(self,context):
     ,(269, 287, 288, 270),(270, 288, 289, 277),(277, 289, 278, 271)]    
         
     return (myVertex,myFaces)    
+#------------------------------------------------------------------------------
+# Create control box
+#
+# objName: Object name
+# x: size x axis
+# y: size y axis
+# z: size z axis
+# tube: True create a tube, False only sides
+#------------------------------------------------------------------------------
+def create_control_box(objName,x,y,z,tube=True):
+
+    myVertex = [(-x/2, 0, 0.0)
+                ,(-x/2, y, 0.0)
+                ,(x/2, y, 0.0)
+                ,(x/2, 0, 0.0)
+                ,(-x/2, 0, z)
+                ,(-x/2, y, z)
+                ,(x/2, y, z)
+                ,(x/2, 0, z)]
+    
+    if tube == True:
+        myFaces = [(0,1,2,3),(0,1,5,4),(2,6,7,3),(5,6,7,4)]
+    else:    
+        myFaces = [(0,4,5,1),(2,6,7,3)]
+        
+    mesh = bpy.data.meshes.new(objName)
+    myobject = bpy.data.objects.new(objName, mesh)
+    
+    myobject.location = bpy.context.scene.cursor_location
+    bpy.context.scene.objects.link(myobject)
+    
+    mesh.from_pydata(myVertex, [], myFaces)
+    mesh.update(calc_edges=True)
+   
+    return myobject
+
 
 #----------------------------------------------
 # Code to run alone the script

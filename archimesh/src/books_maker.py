@@ -38,6 +38,7 @@ class BOOKS(bpy.types.Operator):
     bl_idname = "mesh.archimesh_books"
     bl_label = "Books"
     bl_description = "Books Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     width= bpy.props.FloatProperty(name='Width',min=0.001,max= 1, default= 0.045,precision=3, description='Bounding book width')

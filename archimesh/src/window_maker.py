@@ -36,6 +36,7 @@ class WINDOWS(bpy.types.Operator):
     bl_idname = "mesh.archimesh_window"
     bl_label = "Windows"
     bl_description = "Windows Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     width= bpy.props.FloatProperty(name='Width',min=0.20,max= 50, default= 1.20,precision=3, description='window width')
@@ -159,9 +160,48 @@ def create_window_mesh(self,context):
             o.select = False
     bpy.ops.object.select_all(False)
     if (self.opentype == "1"):
-        generate_rail_window(self,context)
+        myFrame = generate_rail_window(self,context)
     else:
-        generate_leaf_window(self,context)
+        myFrame = generate_leaf_window(self,context)
+        
+    #-------------------------
+    # Create empty and parent
+    #-------------------------
+    bpy.ops.object.empty_add(type='PLAIN_AXES')
+    myEmpty = bpy.data.objects[bpy.context.active_object.name]
+    myEmpty.location = bpy.context.scene.cursor_location
+    myEmpty.name = "Window_Group"
+    myFrame.location = (0,0,0)
+    myFrame.parent = myEmpty 
+    myFrame["archimesh.hole_enable"] = True
+    #------------------------------------------    
+    # Add custom property to detect window
+    #------------------------------------------    
+        
+    # Create control box to open wall holes
+    gap = 0.002
+    y = 0
+    z = 0
+    if self.blind == True:
+        y = self.blind_rail
+    if self.blind == True and self.blind_box == True:
+        z = self.blind_height 
+          
+    myCtrl = create_control_box("CTRL_Hole"
+                       ,self.width-gap
+                       ,self.depth + y
+                       ,self.height + z -gap)
+    # Add custom property to detect Controller
+    myCtrl["archimesh.ctrl_hole"] = True
+    
+    set_normals(myCtrl)
+    myCtrl.parent = myEmpty
+    myCtrl.location.x = 0
+    myCtrl.location.y = -self.depth
+    myCtrl.location.z = 0
+    myCtrl.draw_type = 'WIRE'
+    myCtrl.hide = True
+    myCtrl.hide_render = True
 
     return
 #------------------------------------------------------------------------------
@@ -251,7 +291,7 @@ def generate_rail_window(self,context):
         myBlind.location.x = 0
         myBlind.location.y = self.blind_rail - 0.014  
         myBlind.location.z = self.height - 0.098
-        
+    
     # deactivate others
     for o in bpy.data.objects:
         if (o.select == True):
@@ -260,7 +300,7 @@ def generate_rail_window(self,context):
     myFrame.select = True        
     bpy.context.scene.objects.active = myFrame
     
-    return
+    return myFrame
 #------------------------------------------------------------------------------
 # Generate leaf windows
 # All custom values are passed using self container (self.myvariable)
@@ -372,7 +412,7 @@ def generate_leaf_window(self,context):
     myFrame.select = True        
     bpy.context.scene.objects.active = myFrame
     
-    return
+    return myFrame
 #------------------------------------------------------------------------------
 # Create windows frame
 #
@@ -1885,6 +1925,37 @@ def create_blind(objName,sX,sY,sZ,pX,pY,pZ,mat,blind_rail,blind_ratio):
         set_material(myBlind,Mat)
 
     return myBlind
+#------------------------------------------------------------------------------
+# Create control box
+#
+# objName: Object name
+# x: size x axis
+# y: size y axis
+# z: size z axis
+#------------------------------------------------------------------------------
+def create_control_box(objName,x,y,z):
+
+    myVertex = [(-x/2, 0, 0.0)
+                ,(-x/2, y, 0.0)
+                ,(x/2, y, 0.0)
+                ,(x/2, 0, 0.0)
+                ,(-x/2, 0, z)
+                ,(-x/2, y, z)
+                ,(x/2, y, z)
+                ,(x/2, 0, z)]
+    
+    myFaces = [(0,1,2,3),(0,1,5,4),(2,6,7,3),(5,6,7,4)]
+        
+    mesh = bpy.data.meshes.new(objName)
+    myobject = bpy.data.objects.new(objName, mesh)
+    
+    myobject.location = bpy.context.scene.cursor_location
+    bpy.context.scene.objects.link(myobject)
+    
+    mesh.from_pydata(myVertex, [], myFaces)
+    mesh.update(calc_edges=True)
+   
+    return myobject
 
 #----------------------------------------------
 # Code to run alone the script

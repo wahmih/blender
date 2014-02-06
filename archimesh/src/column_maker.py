@@ -36,6 +36,7 @@ class COLUMN(bpy.types.Operator):
     bl_idname = "mesh.archimesh_column"
     bl_label = "Column"
     bl_description = "Columns Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     # Define properties

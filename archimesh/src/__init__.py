@@ -30,7 +30,7 @@ bl_info = {
     "name": "Archimesh",
     "author": "Antonio Vazquez (antonioya)",
     "location": "View3D > Add > Mesh > Archimesh",
-    "version": (0,7,1),
+    "version": (0,8),
     "blender": (2, 6, 8),
     "description": "Generate rooms, doors, windows, kitchen cabinets, shelves, roofs, stairs and other architecture stuff.",
     "category": "Add Mesh"}
@@ -65,10 +65,11 @@ if "bpy" in locals():
     imp.reload(books_maker)
     imp.reload(lamp_maker)
     imp.reload(curtain_maker)
+    imp.reload(main_panel)
     print("archimesh: Reloaded multifiles")
 else:
     from . import room_maker, door_maker,roof_maker,column_maker,stairs_maker,kitchen_maker,shelves_maker
-    from . import books_maker,curtain_maker,window_maker,lamp_maker
+    from . import books_maker,curtain_maker,window_maker,lamp_maker,main_panel
     print("archimesh: Imported multifiles")
 
 import bpy 
@@ -119,38 +120,58 @@ def register():
     bpy.utils.register_class(INFO_MT_mesh_custom_menu_add)
     bpy.utils.register_class(INFO_MT_mesh_decoration_add)
     bpy.utils.register_class(room_maker.ROOM)
+    bpy.utils.register_class(room_maker.RoomGeneratorPanel)
+    bpy.utils.register_class(room_maker.EXPORT_ROOM)
+    bpy.utils.register_class(room_maker.IMPORT_ROOM)
     bpy.utils.register_class(door_maker.DOOR)
     bpy.utils.register_class(window_maker.WINDOWS)
     bpy.utils.register_class(roof_maker.ROOF)
     bpy.utils.register_class(column_maker.COLUMN)
     bpy.utils.register_class(stairs_maker.STAIRS)
     bpy.utils.register_class(kitchen_maker.KITCHEN)
+    bpy.utils.register_class(kitchen_maker.EXPORT_INVENTORY)
     bpy.utils.register_class(shelves_maker.SHELVES)
     bpy.utils.register_class(books_maker.BOOKS)
     bpy.utils.register_class(lamp_maker.LAMP)
     bpy.utils.register_class(curtain_maker.ROLLER)
     bpy.utils.register_class(curtain_maker.VENETIAN)
     bpy.utils.register_class(curtain_maker.JAPAN)
+    bpy.utils.register_class(main_panel.ArchimeshMainPanel)
+    bpy.utils.register_class(main_panel.holeAction)
     bpy.types.INFO_MT_mesh_add.append(menu_func)
+    
+    # Define properties
+    bpy.types.Scene.archimesh_select_only = bpy.props.BoolProperty(name = "Only selected"
+                                                                   ,description="Apply auto holes only to selected objects",default = False)
+    
     
 def unregister():
     bpy.utils.unregister_class(INFO_MT_mesh_custom_menu_add)
     bpy.utils.unregister_class(INFO_MT_mesh_decoration_add)
     bpy.utils.unregister_class(room_maker.ROOM)
+    bpy.utils.unregister_class(room_maker.RoomGeneratorPanel)
+    bpy.utils.unregister_class(room_maker.EXPORT_ROOM)
+    bpy.utils.unregister_class(room_maker.IMPORT_ROOM)
     bpy.utils.unregister_class(door_maker.DOOR)
     bpy.utils.unregister_class(window_maker.WINDOWS)
     bpy.utils.unregister_class(roof_maker.ROOF)
     bpy.utils.unregister_class(column_maker.COLUMN)
     bpy.utils.unregister_class(stairs_maker.STAIRS)
     bpy.utils.unregister_class(kitchen_maker.KITCHEN)
+    bpy.utils.unregister_class(kitchen_maker.EXPORT_INVENTORY)
     bpy.utils.unregister_class(shelves_maker.SHELVES)
     bpy.utils.unregister_class(books_maker.BOOKS)
     bpy.utils.unregister_class(lamp_maker.LAMP)
     bpy.utils.unregister_class(curtain_maker.ROLLER)
     bpy.utils.unregister_class(curtain_maker.VENETIAN)
     bpy.utils.unregister_class(curtain_maker.JAPAN)
+    bpy.utils.unregister_class(main_panel.ArchimeshMainPanel)
+    bpy.utils.unregister_class(main_panel.holeAction)
     bpy.types.INFO_MT_mesh_add.remove(menu_func)
     
+    # Remove properties
+    del bpy.types.Scene.archimesh_select_only
+
 if __name__ == '__main__':
     register()
 

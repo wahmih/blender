@@ -130,6 +130,7 @@ class LAMP(bpy.types.Operator):
     bl_idname = "mesh.archimesh_lamp"
     bl_label = "Lamp"
     bl_description = "Lamp Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     # preset

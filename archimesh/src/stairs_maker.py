@@ -36,6 +36,7 @@ class STAIRS(bpy.types.Operator):
     bl_idname = "mesh.archimesh_stairs"
     bl_label = "Stairs"
     bl_description = "Stairs Generator"
+    bl_category = 'Archimesh'
     bl_options = {'REGISTER', 'UNDO'}
     
     # Define properties
