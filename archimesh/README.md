@@ -43,3 +43,7 @@ Changes in version 0.8
 - Rooms UI adapted to new features
 - UI adapted to new Blender tabs
 - Source reorganization and minor bug fixing
+
+Changes in version 0.8.1
+=============================
+Fixed error in "Close Walls" parameter if the last walls was defined as "Advanced".
