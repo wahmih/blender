@@ -502,10 +502,17 @@ def create_walls(rp,mymesh,height,baseboard=False):
 
     # Close room
     if (rp.merge == True):
-        if (rp.walls[rp.wall_num-1].a != "1"):
+        if (baseboard == False):
+            if (rp.walls[rp.wall_num-1].a != True):
+                myFaces.extend([(0,1,lastFace + 1, lastFace)])
+            else:   
+                if (rp.walls[rp.wall_num-1].curved == True):
+                    myFaces.extend([(0,1,lastFace + 1, lastFace)])
+                else:   
+                    myFaces.extend([(0,1,lastFace, lastFace + 1)])
+        else:
             myFaces.extend([(0,1,lastFace + 1, lastFace)])
-        else:   
-            myFaces.extend([(0,1,lastFace, lastFace + 1)])
+
 
     mymesh.from_pydata(myVertex, [], myFaces)
     mymesh.update(calc_edges=True)
