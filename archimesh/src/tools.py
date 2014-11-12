@@ -277,6 +277,18 @@ def unwrap_mesh(myObject, allfaces = True):
         bpy.ops.object.mode_set(mode = 'OBJECT')
         
 #--------------------------------------------------------------------
+# Get Node Index(multilanguage support)
+#--------------------------------------------------------------------
+def get_node_index(nodes, dataType):
+    idx = 0
+    for m in nodes:
+        if (m.type == dataType):
+            return idx
+        idx = idx + 1
+
+    # by default
+    return 1  
+#--------------------------------------------------------------------
 # Create cycles diffuse material
 #--------------------------------------------------------------------
 def create_diffuse_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.8,mix = 0.1,twosides=False):
@@ -297,8 +309,12 @@ def create_diffuse_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.8,mi
     mat.diffuse_color = (rv,gv,bv) # viewport color
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
- 
-    node = nodes['Diffuse BSDF']
+    
+    # support for multilanguage
+    node = nodes[get_node_index(nodes,'BSDF_DIFFUSE')]
+    node.name = 'Diffuse BSDF'
+    node.label = 'Diffuse BSDF'
+
     node.inputs[0].default_value = [r, g, b, 1]
     node.location = 200, 320
     
@@ -311,7 +327,7 @@ def create_diffuse_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.8,mi
     node.inputs[0].default_value = mix
     node.location = 500, 160
     
-    node = nodes['Material Output']
+    node = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')]
     node.location = 1100, 160
 
     # Connect nodes
@@ -325,7 +341,7 @@ def create_diffuse_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.8,mi
 
     if (twosides == False):
         outN = nodes['Mix_0'].outputs[0]
-        inN = nodes['Material Output'].inputs[0]
+        inN = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')].inputs[0]
         mat.node_tree.links.new(outN, inN)
 
     
@@ -357,7 +373,7 @@ def create_diffuse_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.8,mi
         mat.node_tree.links.new(outN, inN)
         
         outN = nodes['Mix_1'].outputs[0]
-        inN = nodes['Material Output'].inputs[0]
+        inN = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')].inputs[0]
         mat.node_tree.links.new(outN, inN)
     
        
@@ -385,7 +401,11 @@ def create_translucent_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
  
-    node = nodes['Diffuse BSDF']
+    # support for multilanguage
+    node = nodes[get_node_index(nodes,'BSDF_DIFFUSE')]
+    node.name = 'Diffuse BSDF'
+    node.label = 'Diffuse BSDF'
+
     node.inputs[0].default_value = [r, g, b, 1]
     node.location = 200, 320
     
@@ -398,7 +418,7 @@ def create_translucent_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.
     node.inputs[0].default_value = mix
     node.location = 500, 160
     
-    node = nodes['Material Output']
+    node = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')]
     node.location = 1100, 160
 
     # Connect nodes
@@ -411,7 +431,7 @@ def create_translucent_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.
     mat.node_tree.links.new(outN, inN)   
 
     outN = nodes['Mix_0'].outputs[0]
-    inN = nodes['Material Output'].inputs[0]
+    inN = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')].inputs[0]
     mat.node_tree.links.new(outN, inN)
 
     return mat
@@ -419,7 +439,7 @@ def create_translucent_material(matName, replace, r, g, b ,rv=0.8, gv=0.8, bv=0.
 #--------------------------------------------------------------------
 # Create cycles glossy material
 #--------------------------------------------------------------------
-def create_glossy_material(matName, replace, r, g, b,rv = 0.578, gv = 0.555, bv = 0.736):
+def create_glossy_material(matName, replace, r, g, b,rv = 0.578, gv = 0.555, bv = 0.736, rValue = 0.2):
     
     # Avoid duplicate materials
     if (replace == False):
@@ -438,20 +458,22 @@ def create_glossy_material(matName, replace, r, g, b,rv = 0.578, gv = 0.555, bv 
     mat.diffuse_color = (rv,gv,bv)
     nodes = mat.node_tree.nodes
  
-    node = nodes['Diffuse BSDF']
+    # support for multilanguage
+    node = nodes[get_node_index(nodes,'BSDF_DIFFUSE')]
     mat.node_tree.nodes.remove(node) # remove not used
     
     node = nodes.new('ShaderNodeBsdfGlossy')
     node.name = 'Glossy_0'
     node.inputs[0].default_value = [r, g, b, 1]
+    node.inputs[1].default_value = rValue
     node.location = 200, 160
 
-    node = nodes['Material Output']
+    node = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')]
     node.location = 700, 160
     
     # Connect nodes
     outN = nodes['Glossy_0'].outputs[0]
-    inN = nodes['Material Output'].inputs[0]
+    inN = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')].inputs[0]
     mat.node_tree.links.new(outN, inN)
        
     return mat
@@ -477,7 +499,8 @@ def create_emission_material(matName, replace, r, g, b,energy):
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
  
-    node = nodes['Diffuse BSDF']
+    # support for multilanguage
+    node = nodes[get_node_index(nodes,'BSDF_DIFFUSE')]
     mat.node_tree.nodes.remove(node) # remove not used
     
     node = nodes.new('ShaderNodeEmission')
@@ -486,12 +509,12 @@ def create_emission_material(matName, replace, r, g, b,energy):
     node.inputs[1].default_value = energy
     node.location = 200, 160
 
-    node = nodes['Material Output']
+    node = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')]
     node.location = 700, 160
     
     # Connect nodes
     outN = nodes['Emission_0'].outputs[0]
-    inN = nodes['Material Output'].inputs[0]
+    inN = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')].inputs[0]
     mat.node_tree.links.new(outN, inN)
        
     return mat
@@ -518,7 +541,8 @@ def create_glass_material(matName, replace,rv=0.352716, gv=0.760852, bv=0.9):
     mat.diffuse_color = (rv, gv, bv)
     nodes = mat.node_tree.nodes
  
-    node = nodes['Diffuse BSDF']
+    # support for multilanguage
+    node = nodes[get_node_index(nodes,'BSDF_DIFFUSE')]
     mat.node_tree.nodes.remove(node) # remove not used
 
     node = nodes.new('ShaderNodeLightPath')
@@ -543,7 +567,7 @@ def create_glass_material(matName, replace,rv=0.352716, gv=0.760852, bv=0.9):
     node.inputs[0].default_value = 0.1
     node.location = 690, 290
 
-    node = nodes['Material Output']
+    node = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')]
     node.location = 920, 290
     
     # Connect nodes
@@ -568,7 +592,7 @@ def create_glass_material(matName, replace,rv=0.352716, gv=0.760852, bv=0.9):
     mat.node_tree.links.new(outN, inN)
     
     outN = nodes['Mix_1'].outputs[0]
-    inN = nodes['Material Output'].inputs[0]
+    inN = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')].inputs[0]
     mat.node_tree.links.new(outN, inN)
        
     return mat
@@ -595,11 +619,15 @@ def create_brick_material(matName, replace, r, g, b, rv = 0.8, gv = 0.636, bv = 
     mat.diffuse_color = (rv, gv, bv)
     nodes = mat.node_tree.nodes
  
-    node = nodes['Diffuse BSDF']
+    # support for multilanguage
+    node = nodes[get_node_index(nodes,'BSDF_DIFFUSE')]
+    node.name = 'Diffuse BSDF'
+    node.label = 'Diffuse BSDF'
+
     node.inputs[0].default_value = [r, g, b, 1]
     node.location = 500, 160
     
-    node = nodes['Material Output']
+    node = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')]
     node.location = 700, 160
     
     node = nodes.new('ShaderNodeTexBrick')
@@ -651,11 +679,15 @@ def create_fabric_material(matName, replace, r, g, b, rv = 0.8, gv = 0.636, bv =
     mat.diffuse_color = (rv, gv, bv)
     nodes = mat.node_tree.nodes
  
-    node = nodes['Diffuse BSDF']
+    # support for multilanguage
+    node = nodes[get_node_index(nodes,'BSDF_DIFFUSE')]
+    node.name = 'Diffuse BSDF'
+    node.label = 'Diffuse BSDF'
+
     node.inputs[0].default_value = [r, g, b, 1]
     node.location = 810, 270
     
-    node = nodes['Material Output']
+    node = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')]
     node.location = 1210, 320
     
     node = nodes.new('ShaderNodeTexCoord')
@@ -723,7 +755,7 @@ def create_fabric_material(matName, replace, r, g, b, rv = 0.8, gv = 0.636, bv =
     mat.node_tree.links.new(outN, inN)   
       
     outN = nodes['Add1'].outputs['Shader']
-    inN = nodes['Material Output'].inputs[0]
+    inN = nodes[get_node_index(nodes,'OUTPUT_MATERIAL')].inputs[0]
     mat.node_tree.links.new(outN, inN)     
     
     return mat             

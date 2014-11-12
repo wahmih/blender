@@ -440,7 +440,7 @@ def shape_walls_and_create_children(myRoom,update=False):
         unwrap_mesh(myBase)
         
     # Create floor
-    if (rp.floor):
+    if (rp.floor and rp.wall_num > 1):
         myFloor = create_floor(rp,"Floor",myRoom)
         myFloor["archimesh.room_object"] = True
         myFloor.parent = myRoom    
@@ -448,7 +448,7 @@ def shape_walls_and_create_children(myRoom,update=False):
         unwrap_mesh(myFloor)
 
     # Create ceiling
-    if (rp.ceiling):
+    if (rp.ceiling and rp.wall_num > 1):
         myCeiling = create_floor(rp,"Ceiling",myRoom)
         myCeiling["archimesh.room_object"] = True
         myCeiling.parent = myRoom    
@@ -834,9 +834,9 @@ class RoomGeneratorPanel(bpy.types.Panel):
             row.prop(room,'inverse')
 
             row = layout.row()
-            row.prop(room,'ceiling')
-            row.prop(room,'floor')
             if room.wall_num > 1:
+                row.prop(room,'ceiling')
+                row.prop(room,'floor')
                 row.prop(room,'merge')
 
             # Wall number

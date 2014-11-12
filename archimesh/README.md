@@ -1,8 +1,6 @@
 Archimesh
 =======
 
-** This addon only works with English Blender version **
-
 Blender addon for creating architecture elements.
 
 - Rooms
@@ -30,7 +28,7 @@ The source code has been reorganized and some parameters have been moved from in
 
 Changes in version 0.7.1
 =============================
-Fixed error wih invisible walls in UV unwrap
+- Fixed error wih invisible walls in UV unwrap
 
 Changes in version 0.8
 =============================
@@ -46,4 +44,19 @@ Changes in version 0.8
 
 Changes in version 0.8.1
 =============================
-Fixed error in "Close Walls" parameter if the last walls was defined as "Advanced".
+- Fixed error in "Close Walls" parameter if the last walls was defined as "Advanced".
+
+
+Changes in version 1.0.0
+=============================
+(The version 0.9 was an internal release and it was not published)
+
+
+- New Grease Pencil tool for creating rooms.
+- The kitchen cabinets can be rotated.
+- More options for kitchen countertop.
+- The doors can be rotated during creation.
+- The windows can be rotated during creation.
+- Improved boolean operator for autohole function.
+- Fixed error using languages different of English.
+- Small bug fixing.

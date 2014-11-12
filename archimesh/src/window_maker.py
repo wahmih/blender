@@ -42,7 +42,8 @@ class WINDOWS(bpy.types.Operator):
     width= bpy.props.FloatProperty(name='Width',min=0.20,max= 50, default= 1.20,precision=3, description='window width')
     depth= bpy.props.FloatProperty(name='Depth',min=0.07,max= 1, default= 0.10,precision=3, description='window depth')
     height= bpy.props.FloatProperty(name='Height',min=0.20,max= 50, default= 1,precision=3, description='window height')
-    
+    r = bpy.props.FloatProperty(name='Rotation',min=0,max=360,default=0,precision=1,description='Window rotation')
+
     external = bpy.props.BoolProperty(name = "External frame",description="Create an external front frame",default = True)
     frame= bpy.props.FloatProperty(name='External Frame',min=0.001,max= 1, default= 0.01,precision=3, description='External Frame size')
 
@@ -95,6 +96,8 @@ class WINDOWS(bpy.types.Operator):
             row.prop(self,'height')
             row=box.row()
             row.prop(self,'wf')
+            row=box.row()
+            row.prop(self,'r')
 
             row=box.row()
             row.prop(self,'external')
@@ -170,6 +173,9 @@ def create_window_mesh(self,context):
     bpy.ops.object.empty_add(type='PLAIN_AXES')
     myEmpty = bpy.data.objects[bpy.context.active_object.name]
     myEmpty.location = bpy.context.scene.cursor_location
+    # Rotate Empty
+    myEmpty.rotation_euler.z = math.radians(self.r) 
+    
     myEmpty.name = "Window_Group"
     myFrame.location = (0,0,0)
     myFrame.parent = myEmpty 
@@ -1944,8 +1950,8 @@ def create_control_box(objName,x,y,z):
                 ,(x/2, y, z)
                 ,(x/2, 0, z)]
     
-    myFaces = [(0,1,2,3),(0,1,5,4),(2,6,7,3),(5,6,7,4)]
-        
+    myFaces = [(0,1,2,3),(0,4,5,1),(1,5,6,2),(3,7,4,0),(2,6,7,3),(5,4,7,6)]
+            
     mesh = bpy.data.meshes.new(objName)
     myobject = bpy.data.objects.new(objName, mesh)
     

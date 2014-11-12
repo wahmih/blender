@@ -46,6 +46,7 @@ class DOOR(bpy.types.Operator):
     frame_size= bpy.props.FloatProperty(name='Frame size',min=0.05,max= 0.25, default= 0.08,precision=2, description='Doorframe size')
     crt_mat = bpy.props.BoolProperty(name = "Create default Cycles materials",description="Create default materials for Cycles render.",default = True)
     factor= bpy.props.FloatProperty(name='',min=0.2,max= 1, default= 0.5,precision=3, description='Door ratio')
+    r = bpy.props.FloatProperty(name='Rotation',min=0,max=360,default=0,precision=1,description='Door rotation')
 
     openside = bpy.props.EnumProperty(items = (('1',"Right open",""),
                                 ('2',"Left open",""),
@@ -88,6 +89,8 @@ class DOOR(bpy.types.Operator):
             row=box.row()
             row.prop(self,'frame_thick')
             row.prop(self,'frame_size')
+            row=box.row()
+            row.prop(self,'r')
             
             box=layout.box()
             row=box.row()
@@ -116,6 +119,9 @@ class DOOR(bpy.types.Operator):
             bpy.ops.object.empty_add(type='PLAIN_AXES')
             myEmpty = bpy.data.objects[bpy.context.active_object.name]
             myEmpty.location = bpy.context.scene.cursor_location
+            # Rotate Empty
+            myEmpty.rotation_euler.z = math.radians(self.r) 
+
             myEmpty.name = "Door_Group"
             myFrame.location = (0,0,0)
             myFrame.parent = myEmpty 
@@ -2079,7 +2085,7 @@ def create_control_box(objName,x,y,z,tube=True):
                 ,(x/2, 0, z)]
     
     if tube == True:
-        myFaces = [(0,1,2,3),(0,1,5,4),(2,6,7,3),(5,6,7,4)]
+        myFaces = [(0,1,2,3),(0,4,5,1),(1,5,6,2),(3,7,4,0),(2,6,7,3),(5,4,7,6)]
     else:    
         myFaces = [(0,4,5,1),(2,6,7,3)]
         

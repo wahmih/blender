@@ -31,6 +31,16 @@ import datetime
 import time
 from tools import *
 from bpy_extras.io_utils import ExportHelper
+from enum import Enum
+
+#----------------------------------------------------------
+#  Define rotation types
+#----------------------------------------------------------
+class RotationType(Enum):
+    Default = 9
+    R90CW = 1
+    R90CCW = 2
+    R180 = 3
 
 #----------------------------------------------------------
 #    Export menu UI
@@ -224,19 +234,18 @@ def getInventory():
 
     return output
 
-
-
 #------------------------------------------------------------------
 # Define property group class for cabinet properties
+# This is managed as an array of objects
 #------------------------------------------------------------------
 class CabinetProperties(bpy.types.PropertyGroup):
     # Cabinet width    
     sX = bpy.props.FloatProperty(name='width',min=0.001,max= 10, default= 0.60,precision=3, description='Cabinet width')
-    wY = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify y size')
-    wZ = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify z size')
+    wY = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify depth size')
+    wZ = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Modify height size')
         
     # Cabinet position shift   
-    pX = bpy.props.FloatProperty(name='',min=0,max= 10, default= 0,precision=3, description='Position x shift')
+    pX = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position x shift')
     pY = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position y shift')
     pZ = bpy.props.FloatProperty(name='',min=-10,max= 10, default= 0,precision=3, description='Position z shift')
         
@@ -270,6 +279,15 @@ class CabinetProperties(bpy.types.PropertyGroup):
     bR = bpy.props.BoolProperty(name = "Right Baseboard",description="Create a left baseboard",default = False)
     # Fill countertop spaces
     tC = bpy.props.BoolProperty(name = "Countertop fill",description="Fill empty spaces with countertop",default = True)
+    # Add countertop edge
+    tE = bpy.props.BoolProperty(name = "Countertop edge",description="Add edge to countertop",default = True)
+    # cabinet rotation
+    rotate = bpy.props.EnumProperty(items = (('9',"Default",""),
+                                ('1',"90 CW",""),
+                                ('2',"90 CCW",""),
+                                ('3',"180","")),
+                                name="Rot",
+                                description="Rotate cabinet relative to previous one")
 
 bpy.utils.register_class(CabinetProperties)        
 
@@ -319,7 +337,7 @@ class KITCHEN(bpy.types.Operator):
     fitZ = bpy.props.BoolProperty(name = "Floor origin in Z=0",description="Use Z=0 axis as vertical origin floor position",default = True)
     moveZ = bpy.props.FloatProperty(name='Z position',min=0.001,max= 10, default= 1.5,precision=3, description='Wall cabinet Z position from floor')
 
-    cabinet_num= bpy.props.IntProperty(name='Number of Cabinets',min=1,max= 20, default= 1, description='Number total of cabinets in the Kitchen')
+    cabinet_num= bpy.props.IntProperty(name='Number of Cabinets',min=1,max= 30, default= 1, description='Number total of cabinets in the Kitchen')
     cabinets = bpy.props.CollectionProperty(type=CabinetProperties)
 
     # Materials        
@@ -422,6 +440,7 @@ def add_cabinet(self,box,num,cabinet):
     row = box.row()
     row.prop(cabinet,'wY')
     row.prop(cabinet,'wZ')
+    row.prop(cabinet,'rotate')
     
     row = box.row()
     row.prop(cabinet,'pX')
@@ -448,6 +467,7 @@ def add_cabinet(self,box,num,cabinet):
     if (self.countertop and self.type_cabinet == "1"):
         row = box.row()
         row.prop(cabinet,'tC')
+        row.prop(cabinet,'tE')
 #------------------------------------------------------------------------------
 # Generate mesh data
 # All custom values are passed using self container (self.myvariable)
@@ -484,38 +504,115 @@ def generate_cabinets(self,context):
     
     # Create cabinets
     lastX = myLoc[0]
+    lastY = myLoc[1]
+    lastRot = 0 # last rotation
     #------------------------------------------------------------------------------
     # Cabinets
+    #
+    # By default all cabinets are created in X axis and later are rotated if needed
+    # the default rotation means keep last rotation, not 0, so if the previous
+    # cabinet is 90CW, the next one will be the same. To back to 0, you must select
+    # 90 CCW. 
     #------------------------------------------------------------------------------
     for i in range(0,self.cabinet_num):
         myData = create_box(self.type_cabinet,"Cabinet" + str(i+1)
                            , self.thickness
                            , self.cabinets[i].sX, self.depth + self.cabinets[i].wY, self.height + self.cabinets[i].wZ 
-                           , self.cabinets[i].pX + lastX, myLoc[1] + self.cabinets[i].pY, myLoc[2] + self.cabinets[i].pZ
+                           , self.cabinets[i].pX + lastX
+                           , self.cabinets[i].pY + lastY
+                           , myLoc[2] + self.cabinets[i].pZ
                            , self.cabinets[i].dType, self.cabinets[i].dNum, self.cabinets[i].sNum, self.cabinets[i].gF, self.crt_mat
                            , self.cabinets[i].hand, self.handle, self.handle_x, self.handle_z, self.depth)
-        Boxes.extend([myData[0]])
+        myBox = myData[0]
+        # LastX is the sum of initial position + width of the cabinet.
         lastX = myData[1]
-        # add SKU
+        # add SKU property
         sku = createUnitSKU(self,self.cabinets[i])
         myData[0]["archimesh.sku"] = sku
+        
+        # Save rotation type
+        myRotationType = int(self.cabinets[i].rotate)
+        
+        #--------------------------------------------------------- 
+        # Calculate new rotation angle
+        #
+        #--------------------------------------------------------- 
+        myRot = lastRot
+        #----------
+        # Default
+        #----------
+        if myRotationType == RotationType.Default.value:
+            myRot = myRot # do no change rotation
+        #----------
+        # 90 CW
+        #----------
+        if myRotationType == RotationType.R90CW.value:
+            myRot = myRot + (-math.pi / 2)
+        #----------
+        # 90 CCW
+        #----------
+        if myRotationType == RotationType.R90CCW.value:
+            myRot = myRot + (math.pi / 2)
+        #----------
+        # 180
+        #----------
+        if myRotationType == RotationType.R180.value:
+            myRot = myRot + math.pi
+            
+        # Save the rotation for next cabinet
+        lastRot = myRot
+        angle = myRot - ((2 * math.pi) * (myRot // (2 * math.pi))) # clamp one revolution
+        #print("C:" + str(i) + " angle:" + str(angle))
 
         #-------------------------------------------
         # Countertop (only default height cabinet)
+        # 9-Default, 1-90CW, 2-90CCW, 3-180
         #-------------------------------------------
         if (self.countertop and self.type_cabinet == "1" and self.cabinets[i].wZ == 0):
             w = self.cabinets[i].sX
-            # fill
+            # fill (depend on orientation)
             if (self.cabinets[i].tC):
-                w = w + self.cabinets[i].pX
+                # 0 or 180 degrees
+                if angle == 0 or angle == math.pi: 
+                    w = w + math.fabs(self.cabinets[i].pX)
+                # 90 or 270 degrees
+                if angle == (3 * math.pi) / 2 or angle == math.pi / 2:
+                    w = w + math.fabs(self.cabinets[i].pY)
                 
             myCountertop = create_countertop("Countertop" + str(i+1)
                                              ,w
                                              ,self.depth + self.cabinets[i].wY
                                              ,self.counterheight,self.counterextend
-                                             ,self.crt_mat, self.cabinets[i].dType, self.depth)
+                                             ,self.crt_mat, self.cabinets[i].dType, self.depth
+                                             ,self.cabinets[i].tE)
+            #-------------------------------
+            # Fill countertop spaces
+            #-------------------------------
             if (self.cabinets[i].tC):
-                myCountertop.location[0] = -self.cabinets[i].pX
+                # Default
+                if angle == 0: 
+                    if self.cabinets[i].pX >= 0:
+                        myCountertop.location[0] = -self.cabinets[i].pX
+                    else:
+                        myCountertop.location[0] = 0
+                            
+                # 90CW    
+                if angle == (3 * math.pi) / 2: 
+                    if self.cabinets[i].pY >= 0:
+                        myCountertop.location[0] = 0
+                    else:
+                        myCountertop.location[0] = self.cabinets[i].pY
+                # 90CCW    
+                if angle == math.pi / 2: 
+                    if self.cabinets[i].pY >= 0:
+                        myCountertop.location[0] = self.cabinets[i].pY * -1
+                    else:
+                        myCountertop.location[0] = 0
+                # 180        
+                if angle == math.pi: 
+                    myCountertop.location[0] = 0   
+                
+                
             myCountertop.location[2] = self.height
             myCountertop.parent = myData[0]
             #--------------------
@@ -554,9 +651,44 @@ def generate_cabinets(self,context):
                 t = t + (self.depth + self.cabinets[i].wY) * self.basefactor
             
             myBase["archimesh.base_sku"] = "B%06.3fx%06.3fx%06.3f" % (t,self.thickness, self.baseheight)
+
+        # Rotate    
+        myBox.rotation_euler = (0,0,myRot)
         
         
+        #-----------------------------------------
+        # Calculate new position for next cabinet
+        #-----------------------------------------
+        xM = 0
+        yM = 0
+
+        # 0 degrees
+        if angle == 0:
+            lastX = lastX
+            lastY = lastY    
+        # 90 degrees
+        if angle == math.pi / 2:
+            yM = -self.cabinets[i].sX
+            lastX = lastX - self.cabinets[i].sX - self.cabinets[i].pX 
+            lastY = lastY + self.cabinets[i].sX + self.cabinets[i].pY
+        # 180 degrees
+        if angle == math.pi:
+            lastX = lastX - (2 * (self.cabinets[i].sX + self.cabinets[i].pX))
+        # 270 degrees
+        if angle == (3 * math.pi) / 2:
+            xM = self.depth - self.counterextend
+            lastX = lastX - self.cabinets[i].sX - self.cabinets[i].pX
+            lastY = lastY - self.cabinets[i].sX - self.cabinets[i].pX + self.cabinets[i].pY
+            
         
+        myL = myBox.location
+        myBox.location = (myL.x + xM,myL.y + yM,myL.z)
+        
+        #--------------------------------------- 
+        # Save box
+        #---------------------------------------  
+        Boxes.extend([myBox])
+
     # refine cabinets
     for box in Boxes:
         remove_doubles(box)
@@ -572,9 +704,7 @@ def generate_cabinets(self,context):
         mat = create_diffuse_material("Cabinet_material", False, 0.8, 0.8, 0.8)
         for box in Boxes:
             set_material(box,mat)
-
-  
-          
+            
     return
 #------------------------------------------------------------------------------
 # Create cabinet box
@@ -792,8 +922,9 @@ def create_baseboard(objName,sX,sY,sZ,mat,bL,bR,depth,doorType,gap):
 # mat: Flag for creating materials
 # doorType: Type of door
 # depth: Depth of the cabinets
+# edge: add countertop edge
 #------------------------------------------------------------------------------
-def create_countertop(objName,sX,sY,sZ,over,mat,doorType,depth):
+def create_countertop(objName,sX,sY,sZ,over,mat,doorType,depth,edge):
     oY= 0.02
     oZ= 0.05 + sZ
 
@@ -824,10 +955,11 @@ def create_countertop(objName,sX,sY,sZ,over,mat,doorType,depth):
         
     if (doorType == "10"):
         tX = tX - oY
-        
-    myVertex.extend([(tS,0,sZ),(tS,-oY,sZ),(tS,-oY,oZ),(tS,0,oZ)
-                   ,(tX,0,sZ),(tX,-oY,sZ),(tX,-oY,oZ),(tX,0,oZ)])
-    myFaces.extend([(8,9,10,11),(12,13,14,15),(8,12,15,11),(8,9,13,12),(11,10,14,15),(9,13,14,10)])
+    # Add edge    
+    if edge == True:    
+        myVertex.extend([(tS,0,sZ),(tS,-oY,sZ),(tS,-oY,oZ),(tS,0,oZ)
+                       ,(tX,0,sZ),(tX,-oY,sZ),(tX,-oY,oZ),(tX,0,oZ)])
+        myFaces.extend([(8,9,10,11),(12,13,14,15),(8,12,15,11),(8,9,13,12),(11,10,14,15),(9,13,14,10)])
     
     mymesh = bpy.data.meshes.new(objName)
     myCountertop = bpy.data.objects.new(objName, mymesh)
@@ -956,7 +1088,7 @@ def create_door(type_cabinet,objName,thickness,sX,sY,sZ,doorType,gF,mat,handle,h
     
     if (mat):
         # Door material
-        mat = create_diffuse_material("Door_material", False, 0.8, 0.8, 0.8, 0.6, 0.6, 0.6, 0.2)
+        mat = create_diffuse_material("Door_material", False, 0.8, 0.8, 0.8, 0.279, 0.337, 0.6, 0.2)
         set_material(myDoor, mat)
         # Add Glass
         if (doorType == "4" or doorType == "5" 
@@ -1166,7 +1298,7 @@ def create_handle(model,myDoor,thickness,handle_position,mat,handle_x,handle_z):
     myHandle.parent = myDoor
     # Materials
     if (mat):
-        mat = create_glossy_material("Handle_material", False, 0.733, 0.779, 0.8)
+        mat = create_glossy_material("Handle_material", False, 0.733, 0.779, 0.8, 0.733, 0.779, 0.8,0.02)
         set_material(myHandle, mat)
 
     # Smooth

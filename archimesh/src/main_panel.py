@@ -24,6 +24,7 @@
 #
 #----------------------------------------------------------
 import bpy
+import math
 from tools import *
 
 #-----------------------------------------------------
@@ -118,6 +119,200 @@ class holeAction(bpy.types.Operator):
                     
         return {'FINISHED'}
 
+#------------------------------------------------------
+# Button: Action to create room from grease pencil 
+#------------------------------------------------------
+class pencilAction(bpy.types.Operator):
+    bl_idname = "object.archimesh_pencil_room"
+    bl_label = "Room from Draw"
+    bl_description = "Create a room base on grease pencil strokes (draw from top view (7 key))"
+    bl_category = 'Archimesh'
+
+    #------------------------------
+    # Execute
+    #------------------------------
+    def execute(self, context):
+        # Enable for debugging code
+        debugMODE = False
+
+        scene = context.scene
+
+        # define error margin 
+        xRange = 0.01
+        yRange = 0.01
+        
+        if debugMODE == True:
+            print("======================================================================")
+            print("==                                                                  ==")
+            print("==  Grease pencil strokes analysis                                  ==")
+            print("==                                                                  ==")
+            print("======================================================================")
+        
+        #-----------------------------------
+        # Get grease pencil points
+        #-----------------------------------
+        try:
+            
+            try:
+                pencil = bpy.context.object.grease_pencil.layers.active 
+            except:    
+                pencil = bpy.context.scene.grease_pencil.layers.active
+                
+            if pencil.active_frame != None:
+                for i, stroke in enumerate(pencil.active_frame.strokes):
+                    stroke_points = pencil.active_frame.strokes[i].points
+                    allPoints = [ (point.co.x, point.co.y) 
+                                    for point in stroke_points ]
+                    
+                    myPoints = []
+                    idx = 0
+                    x = 0
+                    y = 0
+                    orientation = None
+                    old_orientation = None
+                    
+                    for point in allPoints:
+                        if idx == 0:
+                            x = point[0]
+                            y = point[1]
+                        else:    
+                            if (x - xRange) <= point[0] <= (x + xRange):
+                                orientation = "V"
+                                
+                            if (y - yRange) <= point[1] <= (y + yRange):
+                                orientation = "H"
+                                
+                            if old_orientation == orientation:
+                                x = point[0]
+                                y = point[1]
+                            else:                                     
+                                myPoints.extend([(x,y)])
+                                x = point[0]
+                                y = point[1]
+                                old_orientation = orientation
+            
+                        idx += 1
+                    # Last point
+                    myPoints.extend([(x,y)])
+                    
+                    if debugMODE == True:
+                        print("\nPoints\n====================")
+                        i = 0 
+                        for p in myPoints:
+                            print(str(i) + ":" + str(p))
+                            i += 1
+                    #-----------------------------------
+                    # Calculate distance between points
+                    #-----------------------------------
+                    if debugMODE == True:
+                        print("\nDistance\n====================")
+                    i = len(myPoints)
+                    distList = []
+                    for e in range(1,i):
+                        d = math.sqrt(((myPoints[e][0] - myPoints[e-1][0]) ** 2) + ((myPoints[e][1] - myPoints[e-1][1]) ** 2))
+                        distList.extend([(d)])
+                        
+                        if debugMODE == True:
+                            print(str(e-1) + ":" + str(d))
+                    #-----------------------------------
+                    # Calculate angle of walls
+                    # clamped to right angles
+                    #-----------------------------------
+                    if debugMODE == True:
+                        print("\nAngle\n====================")
+                        
+                    i = len(myPoints)
+                    angleList = []
+                    for e in range(1,i):
+                        sinV = (myPoints[e][1] - myPoints[e-1][1]) / math.sqrt(((myPoints[e][0] - myPoints[e-1][0]) ** 2) + ((myPoints[e][1] - myPoints[e-1][1]) ** 2))
+                        a = math.asin(sinV)            
+                        # Clamp to 90 or 0 degrees
+                        if math.fabs(a) > math.pi / 4:
+                            b = math.pi / 2
+                        else:
+                            b = 0    
+                        
+                        angleList.extend([(b)])
+                        # Reverse de distance using angles (inverse angle to axis) for Vertical lines
+                        if a < 0.0 and b != 0:
+                            distList[e-1] = distList[e-1] * -1 # reverse distance
+                            
+                        # Reverse de distance for horizontal lines
+                        if b == 0:
+                            if myPoints[e-1][0] > myPoints[e][0]:
+                                distList[e-1] = distList[e-1] * -1 # reverse distance
+                        
+                        if debugMODE == True:
+                            print(str(e-1) + ":" + str((a * 180) / math.pi) + "...:" + str((b * 180) / math.pi) + "--->" + str(distList[e-1])) 
+
+                    #---------------------------------------
+                    # Verify duplications and reduce noise
+                    #---------------------------------------
+                    if len(angleList) >= 1:
+                        clearAngles = []
+                        clearDistan = []
+                        i = len(angleList)
+                        oldAngle = angleList[0]
+                        oldDist = 0
+                        for e in range(0,i):
+                            if oldAngle != angleList[e]:
+                                clearAngles.extend([(oldAngle)])
+                                clearDistan.extend([(oldDist)])    
+                                oldAngle = angleList[e]
+                                oldDist = distList[e]
+                            else:
+                                oldDist += distList[e]
+                        # last 
+                        clearAngles.extend([(oldAngle)])
+                        clearDistan.extend([(oldDist)])    
+
+            #----------------------------
+            # Create the room 
+            #----------------------------
+            if len(myPoints) > 1 and len(clearAngles) > 0:
+                # Move cursor
+                bpy.context.scene.cursor_location.x = myPoints[0][0]
+                bpy.context.scene.cursor_location.y = myPoints[0][1]
+                bpy.context.scene.cursor_location.z = 0 # always on grid floor
+                
+                # Add room mesh
+                bpy.ops.mesh.archimesh_room()
+                myRoom = context.object
+                myData = myRoom.RoomGenerator[0]
+                # Number of walls
+                myData.wall_num = len(myPoints) - 1
+                myData.ceiling = scene.archimesh_ceiling
+                myData.floor = scene.archimesh_floor
+                myData.merge = scene.archimesh_merge
+                
+                i = len(myPoints)
+                for e in range(0,i-1):
+                    if clearAngles[e] == math.pi / 2: 
+                        if clearDistan[e] > 0:
+                            myData.walls[e].w = round(math.fabs(clearDistan[e]),2)
+                            myData.walls[e].r = (math.fabs(clearAngles[e]) * 180) / math.pi # from radians
+                        else:
+                            myData.walls[e].w = round(math.fabs(clearDistan[e]),2)
+                            myData.walls[e].r = (math.fabs(clearAngles[e]) * 180 * -1) / math.pi # from radians
+                                
+                    else:
+                        myData.walls[e].w = round(clearDistan[e],2)
+                        myData.walls[e].r = (math.fabs(clearAngles[e]) * 180) / math.pi # from radians
+                            
+                # Remove Grease pencil
+                if pencil is not None:
+                    for frame in pencil.frames:
+                        pencil.frames.remove(frame)
+
+                self.report({'INFO'}, "Archimesh: Room created from grease pencil strokes")
+            else:
+                self.report({'WARNING'}, "Archimesh: Not enough grease pencil strokes for creating room.")
+                
+            return {'FINISHED'}
+        except:
+            self.report({'WARNING'}, "Archimesh: No grease pencil strokes. Do strokes in top view before creating room")
+            return {'CANCELLED'}
+
 #------------------------------------------------------------------
 # Define panel class for main functions.
 #------------------------------------------------------------------
@@ -154,6 +349,16 @@ class ArchimeshMainPanel(bpy.types.Panel):
                 row.operator("io_export.roomdata", text="Export",icon='PASTEDOWN')
         except:
             x = 1 # dummy line   
+        
+        # Grease pencil tools 
+        box = layout.box()
+        box.label("Pencil Tools",icon='MODIFIER')
+        row = box.row(align=False)
+        row.operator("object.archimesh_pencil_room", icon='GREASEPENCIL')
+        row = box.row(align=False)
+        row.prop(scene,"archimesh_ceiling")
+        row.prop(scene,"archimesh_floor")
+        row.prop(scene,"archimesh_merge")
         #-------------------------------------------------------------------------
         # If the selected object isn't a kitchen 
         # this button is not created.

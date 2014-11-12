@@ -30,7 +30,7 @@ bl_info = {
     "name": "Archimesh",
     "author": "Antonio Vazquez (antonioya)",
     "location": "View3D > Add > Mesh > Archimesh",
-    "version": (0,8,1),
+    "version": (1,0,0),
     "blender": (2, 6, 8),
     "description": "Generate rooms, doors, windows, kitchen cabinets, shelves, roofs, stairs and other architecture stuff.",
     "category": "Add Mesh"}
@@ -138,11 +138,22 @@ def register():
     bpy.utils.register_class(curtain_maker.JAPAN)
     bpy.utils.register_class(main_panel.ArchimeshMainPanel)
     bpy.utils.register_class(main_panel.holeAction)
+    bpy.utils.register_class(main_panel.pencilAction)
     bpy.types.INFO_MT_mesh_add.append(menu_func)
     
     # Define properties
     bpy.types.Scene.archimesh_select_only = bpy.props.BoolProperty(name = "Only selected"
                                                                    ,description="Apply auto holes only to selected objects",default = False)
+    bpy.types.Scene.archimesh_ceiling = bpy.props.BoolProperty(name="Ceiling"
+                                                               ,description="Create a ceiling."
+                                                               ,default = False)
+    bpy.types.Scene.archimesh_floor = bpy.props.BoolProperty(name="Floor"
+                                                             ,description="Create a floor automatically."
+                                                             ,default=False)
+
+    bpy.types.Scene.archimesh_merge = bpy.props.BoolProperty(name="Close walls"
+                                                             ,description="Close walls to create a full closed room."
+                                                             ,default=False)
     
     
 def unregister():
@@ -167,10 +178,15 @@ def unregister():
     bpy.utils.unregister_class(curtain_maker.JAPAN)
     bpy.utils.unregister_class(main_panel.ArchimeshMainPanel)
     bpy.utils.unregister_class(main_panel.holeAction)
+    bpy.utils.unregister_class(main_panel.pencilAction)
     bpy.types.INFO_MT_mesh_add.remove(menu_func)
     
     # Remove properties
     del bpy.types.Scene.archimesh_select_only
+    del bpy.types.Scene.archimesh_ceiling
+    del bpy.types.Scene.archimesh_floor
+    del bpy.types.Scene.archimesh_merge
+    
 
 if __name__ == '__main__':
     register()
