@@ -31,16 +31,14 @@ import datetime
 import time
 from tools import *
 from bpy_extras.io_utils import ExportHelper
-from enum import Enum
 
 #----------------------------------------------------------
 #  Define rotation types
 #----------------------------------------------------------
-class RotationType(Enum):
-    Default = 9
-    R90CW = 1
-    R90CCW = 2
-    R180 = 3
+RotationType_Default = 9
+RotationType_R90CW = 1
+RotationType_R90CCW = 2
+RotationType_R180 = 3
 
 #----------------------------------------------------------
 #    Export menu UI
@@ -541,22 +539,22 @@ def generate_cabinets(self,context):
         #----------
         # Default
         #----------
-        if myRotationType == RotationType.Default.value:
+        if myRotationType == RotationType_Default:
             myRot = myRot # do no change rotation
         #----------
         # 90 CW
         #----------
-        if myRotationType == RotationType.R90CW.value:
+        if myRotationType == RotationType_R90CW:
             myRot = myRot + (-math.pi / 2)
         #----------
         # 90 CCW
         #----------
-        if myRotationType == RotationType.R90CCW.value:
+        if myRotationType == RotationType_R90CCW:
             myRot = myRot + (math.pi / 2)
         #----------
         # 180
         #----------
-        if myRotationType == RotationType.R180.value:
+        if myRotationType == RotationType_R180:
             myRot = myRot + math.pi
             
         # Save the rotation for next cabinet

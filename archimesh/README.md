@@ -60,3 +60,7 @@ Changes in version 1.0.0
 - Improved boolean operator for autohole function.
 - Fixed error using languages different of English.
 - Small bug fixing.
+
+Changes in version 1.0.1
+=============================
+- Fix problem installing addon in previous versions (< 2.71)
