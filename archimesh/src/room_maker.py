@@ -92,18 +92,18 @@ class EXPORT_ROOM(bpy.types.Operator, ExportHelper):
                 if i < myData.wall_num:
                     i = i + 1
                     fOut.write("w=" + str(round(w.w,3)))
-                    if w.a == True: # advance
-                        fOut.write(",a=" + str(w.a) + ",")
-                        fOut.write("r=" + str(round(w.r,1)) + ",")
-                        fOut.write("h=" + str(w.h) + ",")
-                        fOut.write("m=" + str(round(w.m,3)) + ",")
-                        fOut.write("f=" + str(round(w.f,3)) + ",")
-                        fOut.write("c=" + str(w.curved) + ",")
-                        fOut.write("cf=" + str(round(w.curve_factor,1)) + ",")
-                        fOut.write("cd=" + str(round(w.curve_arc_deg,1)) + ",")
-                        fOut.write("cs=" + str(w.curve_steps) + "\n")
-                    else:
-                        fOut.write("\n")
+                    #if w.a == True: # advance
+                    fOut.write(",a=" + str(w.a) + ",")
+                    fOut.write("r=" + str(round(w.r,1)) + ",")
+                    fOut.write("h=" + str(w.h) + ",")
+                    fOut.write("m=" + str(round(w.m,3)) + ",")
+                    fOut.write("f=" + str(round(w.f,3)) + ",")
+                    fOut.write("c=" + str(w.curved) + ",")
+                    fOut.write("cf=" + str(round(w.curve_factor,1)) + ",")
+                    fOut.write("cd=" + str(round(w.curve_arc_deg,1)) + ",")
+                    fOut.write("cs=" + str(w.curve_steps) + "\n")
+                    #else:
+                    #    fOut.write("\n")
                     
             # Baseboard
             fOut.write("#\n# Baseboard\n#\n")

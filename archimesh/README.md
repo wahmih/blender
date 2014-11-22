@@ -64,3 +64,7 @@ Changes in version 1.0.0
 Changes in version 1.0.1
 =============================
 - Fix problem installing addon in previous versions (< 2.71)
+
+Changes in version 1.0.2
+=============================
+- Fixed error importing rooms created with grease pencil. This fix required to re-export the room.
