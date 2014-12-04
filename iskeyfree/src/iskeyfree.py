@@ -19,9 +19,9 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 bl_info = {
-    'name': 'Find free keyboard shortcuts',
+    'name': 'Is_key_Free',
     'author': 'Antonio Vazquez (antonioya)',
-    'version': (1, 0),
+    'version': (1, 0, 1),
     "blender": (2, 6, 9),
     'location': 'Properties pane > IsKeyFree Tools',
     'description': 'Find free shortcuts and inform of used keys',
