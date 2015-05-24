@@ -21,4 +21,4 @@ The measures can be used with Meshes, Empties, Lamps and Cameras. Blender units,
 
 As all measure definitions are saved in the blend file, you can save the file and the next time you use it, the measures will be ready.
 
-Demo video:
+Demo video: http://youtu.be/R0jCdCoaRvs
