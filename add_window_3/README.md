@@ -9,3 +9,6 @@ This upgrade add the following new features:
 
 - Now you can change the parameters of the windows after unselect.
 - Materials are created for Cycles
+
+
+** This script is deprecated now. The new versions will be integrated in Archimesh.

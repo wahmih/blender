@@ -1,14 +1,23 @@
 Archimesh
 =======
 
-Blender addon for creating architecture elements.
+Blender add-on for creating architecture elements.
 
 - Rooms
 - Houses
 - Columns
 - Stairs
 - Doors
+- Windows
 - Tile roofs
+- Kitchen cabinets
+- Japanese curtains
+- Roller curtains
+- Venetian blind
+- Books
+- Lamps
+
+You can get more information in: https://www.youtube.com/playlist?list=PLQAfj95MdhTJ7zifNb5ab-n-TI0GmKwWQ
 
 Changes in version 0.6
 =============================
@@ -68,3 +77,22 @@ Changes in version 1.0.1
 Changes in version 1.0.2
 =============================
 - Fixed error importing rooms created with grease pencil. This fix required to re-export the room.
+
+Changes in version 1.1.0
+=============================
+- NEW: Display measures for Walls (wall number too), Doors and Windows. Now it's easier to create exact measures.
+- NEW: Doors are now editable after creation.
+- NEW: Windows are now editable after creation.
+- NEW: Venetian curtains are now editable after creation.
+- NEW: Integrated Window generator script. Now it's possible to create different windows shapes.
+- NEW: Now it's possible to create wall covers with boards automatically for creating external walls.
+- Changed UI for using color picker for venetians, lamps and books.
+- Improved Room Import/Export process.
+- Autohole controllers are now visible for improving usability.
+- Changed glass material for avoiding wrong reflections.
+- Some code has been renamed for improving code maintenance.
+- All python code has been reformatted for PEP8 syntax.
+- Minor UI changes.
+- Minor bug fixing.
+ 
+V1.1 video: 
