@@ -30,8 +30,8 @@
 bl_info = {
     "name": "MeasureIt",
     "author": "Antonio Vazquez (antonioya)",
-    "location": "View3D > Tools Panel",
-    "version": (1, 1, 0),
+    "location": "View3D > Tools Panel /Properties panel",
+    "version": (1, 2, 0),
     "blender": (2, 7, 4),
     "description": "Tools for measuring objects.",
     "category": "3D View"}
@@ -105,7 +105,7 @@ def register():
     bpy.types.Scene.measureit_gl_txt = bpy.props.StringProperty(name="Text", maxlen=48,
                                                                 description="Short description")
 
-    bpy.types.Scene.measureit_gl_precision = bpy.props.IntProperty(name='Precision', min=1, max=5, default=2,
+    bpy.types.Scene.measureit_gl_precision = bpy.props.IntProperty(name='Precision', min=0, max=5, default=2,
                                                                    description="Number of decimal precision")
     bpy.types.Scene.measureit_gl_show_d = bpy.props.BoolProperty(name="ShowDist",
                                                                  description="Display measures",
@@ -140,6 +140,36 @@ def register():
                                                                   default=5,
                                                                   min=0,
                                                                   max=100)
+    bpy.types.Scene.measureit_gl_scaletxt = bpy.props.StringProperty(name="ScaleText", maxlen=48,
+                                                                     description="Scale title",
+                                                                     default="Scale:")
+    bpy.types.Scene.measureit_scale_precision = bpy.props.IntProperty(name='Precision', min=0, max=5, default=0,
+                                                                      description="Number of decimal precision")
+
+    bpy.types.Scene.measureit_ovr = bpy.props.BoolProperty(name="Override",
+                                                           description="Override colors and fonts",
+                                                           default=False)
+    bpy.types.Scene.measureit_ovr_font = bpy.props.IntProperty(name="Font",
+                                                               description="Override text size",
+                                                               default=14, min=10, max=150)
+    bpy.types.Scene.measureit_ovr_color = bpy.props.FloatVectorProperty(name="Override color",
+                                                                        description="Override Color",
+                                                                        default=(1, 0, 0, 1.0),
+                                                                        min=0.1,
+                                                                        max=1,
+                                                                        subtype='COLOR',
+                                                                        size=4)
+    bpy.types.Scene.measureit_ovr_width = bpy.props.IntProperty(name='Override width', min=1, max=10, default=1,
+                                                                description='override line width')
+
+    bpy.types.Scene.measureit_units = bpy.props.EnumProperty(items=(('1', "Automatic", "Use scene units"),
+                                                                    ('2', "Meters", ""),
+                                                                    ('3', "Centimeters", ""),
+                                                                    ('4', "Milimiters", ""),
+                                                                    ('5', "Feet", ""),
+                                                                    ('6', "Inches", "")),
+                                                             name="Units",
+                                                             description="Units")
 
     # OpenGL flag
     wm = bpy.types.WindowManager
@@ -172,6 +202,13 @@ def unregister():
     del bpy.types.Scene.measureit_scale_font
     del bpy.types.Scene.measureit_scale_pos_x
     del bpy.types.Scene.measureit_scale_pos_y
+    del bpy.types.Scene.measureit_gl_scaletxt
+    del bpy.types.Scene.measureit_scale_precision
+    del bpy.types.Scene.measureit_ovr
+    del bpy.types.Scene.measureit_ovr_font
+    del bpy.types.Scene.measureit_ovr_color
+    del bpy.types.Scene.measureit_ovr_width
+    del bpy.types.Scene.measureit_units
 
     # remove OpenGL data
     measureit_main.RunHintDisplayButton.handle_remove(measureit_main.RunHintDisplayButton, bpy.context)

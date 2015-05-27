@@ -90,19 +90,21 @@ def draw_segments(context, myobj, op, region, rv3d):
     if op.measureit_num > 0:
         scene = bpy.context.scene
         pr = scene.measureit_gl_precision
-        fmt = "%6." + str(pr) + "f"
-
+        fmt = "%1." + str(pr) + "f"
+        ovr = scene.measureit_ovr
+        ovrcolor = scene.measureit_ovr_color
+        ovrfsize = scene.measureit_ovr_font
+        ovrline = scene.measureit_ovr_width
+        units = scene.measureit_units
         # --------------------
         # Scene Scale
         # --------------------
         if scene.measureit_scale is True:
+            prs = scene.measureit_scale_precision
+            fmts = "%1." + str(prs) + "f"
             pos_x, pos_y = get_scale_txt_location(context)
-            a = str(scene.measureit_scale_factor)
-            dec = int(a[a.index('.')+1:])
-            if dec > 0:
-                tx_scale = "Scale: 1: %2.3f" % scene.measureit_scale_factor
-            else:
-                tx_scale = "Scale: 1: " + str(int(scene.measureit_scale_factor))
+            tx_dsp = fmts % scene.measureit_scale_factor
+            tx_scale = scene.measureit_gl_scaletxt + " 1:" + tx_dsp
             draw_text(pos_x, pos_y,
                       tx_scale, scene.measureit_scale_color, scene.measureit_scale_font)
         # --------------------
@@ -110,14 +112,20 @@ def draw_segments(context, myobj, op, region, rv3d):
         # --------------------
         for idx in range(0, op.measureit_num):
             ms = op.measureit_segments[idx]
-            fsize = ms.glfont_size
+            if ovr is False:
+                fsize = ms.glfont_size
+            else:
+                fsize = ovrfsize
             # ------------------------------
             # only active and visible
             # ------------------------------
             if ms.glview is True and ms.glfree is False:
                 # noinspection PyBroadException
                 try:
-                    rgb = ms.glcolor
+                    if ovr is False:
+                        rgb = ms.glcolor
+                    else:
+                        rgb = ovrcolor
                     # ----------------------
                     # Segment or Label
                     # ----------------------
@@ -220,8 +228,13 @@ def draw_segments(context, myobj, op, region, rv3d):
                     # colour + line setup
                     # ------------------------------------
                     bgl.glEnable(bgl.GL_BLEND)
-                    bgl.glLineWidth(ms.glwidth)
+                    if ovr is False:
+                        bgl.glLineWidth(ms.glwidth)
+                    else:
+                        bgl.glLineWidth(ovrline)
+
                     bgl.glColor4f(rgb[0], rgb[1], rgb[2], rgb[3])
+
                     # ------------------------------------
                     # Text (distance)
                     # ------------------------------------
@@ -236,24 +249,62 @@ def draw_segments(context, myobj, op, region, rv3d):
                             if scene.measureit_scale is True:
                                 dist = dist * scene.measureit_scale_factor
 
-                            # Units
-                            if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                                feet = dist * 3.2808399
-                                inches = (feet * 12) % 12
-                                if feet >= 1.0:
-                                    tx_dist = fmt % feet + "'"
-                                else:
-                                    tx_dist = fmt % inches + "''"
-                            elif bpy.context.scene.unit_settings.system == "METRIC":
-                                if dist >= 1.0:
-                                    tx_dist = fmt % dist + "m"
-                                else:
-                                    if dist >= 0.01:
-                                        d_cm = dist * 100
-                                        tx_dist = fmt % d_cm + "cm"
+                            # ------------------------
+                            # Units automatic
+                            # ------------------------
+                            if units == "1":
+                                # Units
+                                if bpy.context.scene.unit_settings.system == "IMPERIAL":
+                                    feet = dist * 3.2808399
+                                    inches = (feet * 12) % 12
+                                    if feet >= 1.0:
+                                        tx_dist = fmt % feet + " ft"
                                     else:
-                                        d_mm = dist * 1000
-                                        tx_dist = fmt % d_mm + "mm"
+                                        tx_dist = fmt % inches + " in"
+                                elif bpy.context.scene.unit_settings.system == "METRIC":
+                                    if dist >= 1.0:
+                                        tx_dist = fmt % dist + " m"
+                                    else:
+                                        if dist >= 0.01:
+                                            d_cm = dist * 100
+                                            tx_dist = fmt % d_cm + " cm"
+                                        else:
+                                            d_mm = dist * 1000
+                                            tx_dist = fmt % d_mm + " mm"
+                                else:
+                                    tx_dist = fmt % dist
+                            # ------------------------
+                            # Units meters
+                            # ------------------------
+                            elif units == "2":
+                                tx_dist = fmt % dist + " m"
+                            # ------------------------
+                            # Units centimeters
+                            # ------------------------
+                            elif units == "3":
+                                d_cm = dist * 100
+                                tx_dist = fmt % d_cm + " cm"
+                            # ------------------------
+                            # Units milimiters
+                            # ------------------------
+                            elif units == "4":
+                                d_mm = dist * 1000
+                                tx_dist = fmt % d_mm + " mm"
+                            # ------------------------
+                            # Units feet
+                            # ------------------------
+                            elif units == "5":
+                                feet = dist * 3.2808399
+                                tx_dist = fmt % feet + " ft"
+                            # ------------------------
+                            # Units inches
+                            # ------------------------
+                            elif units == "6":
+                                inches = dist * 39.3700787
+                                tx_dist = fmt % inches + " in"
+                            # ------------------------
+                            # Default
+                            # ------------------------
                             else:
                                 tx_dist = fmt % dist
 

@@ -30,7 +30,20 @@ import bpy
 # noinspection PyUnresolvedReferences
 import bmesh
 from measureit_tools import *
+# noinspection PyUnresolvedReferences
+from bpy.app.handlers import persistent
 
+
+# ------------------------------------------------------
+# Handler to detect new Blend load
+#
+# ------------------------------------------------------
+# noinspection PyUnusedLocal
+@persistent
+def load_handler(dummy):
+    RunHintDisplayButton.handle_remove(None, bpy.context)
+
+bpy.app.handlers.load_post.append(load_handler)
 
 # ------------------------------------------------------------------
 # Define property group class for measureit data
@@ -138,7 +151,10 @@ class MeasureitEditPanel(bpy.types.Panel):
                 box = layout.box()
                 row = box.row()
                 row.label(context.object.name)
+                row = box.row()
                 row.prop(scene, 'measureit_gl_precision', text="Precision")
+                row.prop(scene, 'measureit_units')
+                row = box.row()
                 row.prop(scene, 'measureit_gl_show_d', text="Measures")
                 row.prop(scene, 'measureit_gl_show_n', text="Names")
                 # Scale factor
@@ -146,12 +162,22 @@ class MeasureitEditPanel(bpy.types.Panel):
                 row.prop(scene, 'measureit_scale', text="Scale")
                 if scene.measureit_scale is True:
                     row.prop(scene, 'measureit_scale_factor', text="1")
+                    row.prop(scene, 'measureit_scale_precision', text="")
+                    row.prop(scene, 'measureit_gl_scaletxt', text="")
                     row = box.row()
                     row.prop(scene, 'measureit_scale_color')
                     row.prop(scene, 'measureit_scale_font')
                     row = box.row()
                     row.prop(scene, 'measureit_scale_pos_x')
                     row.prop(scene, 'measureit_scale_pos_y')
+
+                # Override
+                row = box.row()
+                row.prop(scene, 'measureit_ovr', text="Override")
+                if scene.measureit_ovr is True:
+                    row.prop(scene, 'measureit_ovr_color', text="")
+                    row.prop(scene, 'measureit_ovr_font', text="Font")
+                    row.prop(scene, 'measureit_ovr_width', text="Width")
 
                 mp = context.object.MeasureGenerator[0]
                 # -----------------

@@ -22,3 +22,17 @@ The measures can be used with Meshes, Empties, Lamps and Cameras. Blender units,
 As all measure definitions are saved in the blend file, you can save the file and the next time you use it, the measures will be ready.
 
 Demo video: http://youtu.be/R0jCdCoaRvs
+
+Changes in version 1.1
+=============================
+- New scale parameter
+
+Changes in version 1.2
+=============================
+- New scale text.
+- New scale precision.
+- New select units (scene or manual selection (meters, cm, mm, ft or in)).
+- New override parameteres for scene (color, font, line width).
+- Precision allows 0.
+- Fix error after loading new .blend.
+
