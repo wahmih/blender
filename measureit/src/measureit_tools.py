@@ -35,6 +35,8 @@ import math
 # noinspection PyUnresolvedReferences
 import mathutils
 # noinspection PyUnresolvedReferences
+import bmesh
+# noinspection PyUnresolvedReferences
 from bpy_extras import view3d_utils
 
 
@@ -130,7 +132,12 @@ def draw_segments(context, myobj, op, region, rv3d):
                     # Segment or Label
                     # ----------------------
                     if ms.gltype == 1 or ms.gltype == 2:
-                        obverts = myobj.data.vertices
+                        if myobj.mode == 'EDIT':
+                            bm = bmesh.from_edit_mesh(myobj.data)
+                            obverts = bm.verts
+                        else:
+                            obverts = myobj.data.vertices
+
                         if ms.glpointa <= len(obverts) and ms.glpointb <= len(obverts):
                             a_p1 = get_point(obverts[ms.glpointa].co, myobj)
                             b_p1 = get_point(obverts[ms.glpointb].co, myobj)
@@ -166,7 +173,11 @@ def draw_segments(context, myobj, op, region, rv3d):
                     # Vertex to origin
                     # ----------------------
                     if ms.gltype == 6:
-                        obverts = myobj.data.vertices
+                        if myobj.mode == 'EDIT':
+                            bm = bmesh.from_edit_mesh(myobj.data)
+                            obverts = bm.verts
+                        else:
+                            obverts = myobj.data.vertices
                         a_p1 = (0, 0, 0)
                         b_p1 = get_point(obverts[ms.glpointa].co, myobj)
                     # ----------------------
