@@ -72,7 +72,7 @@ def draw_main(context):
                         if x in layers:
                             op = myobj.MeasureGenerator[0]
                             draw_segments(context, myobj, op, region, rv3d)
-                        break;
+                        break
 
     # -----------------------
     # restore opengl defaults
@@ -132,11 +132,7 @@ def draw_segments(context, myobj, op, region, rv3d):
                     # Segment or Label
                     # ----------------------
                     if ms.gltype == 1 or ms.gltype == 2:
-                        if myobj.mode == 'EDIT':
-                            bm = bmesh.from_edit_mesh(myobj.data)
-                            obverts = bm.verts
-                        else:
-                            obverts = myobj.data.vertices
+                        obverts = get_mesh_vertices(myobj)
 
                         if ms.glpointa <= len(obverts) and ms.glpointb <= len(obverts):
                             a_p1 = get_point(obverts[ms.glpointa].co, myobj)
@@ -145,7 +141,7 @@ def draw_segments(context, myobj, op, region, rv3d):
                     # Vertex to Vertex (link)
                     # ----------------------
                     if ms.gltype == 3:
-                        obverts = myobj.data.vertices
+                        obverts = get_mesh_vertices(myobj)
                         linkverts = bpy.data.objects[ms.gllink].data.vertices
                         a_p1 = get_point(obverts[ms.glpointa].co, myobj)
                         b_p1 = get_point(linkverts[ms.glpointb].co, bpy.data.objects[ms.gllink])
@@ -153,7 +149,7 @@ def draw_segments(context, myobj, op, region, rv3d):
                     # Vertex to Object (link)
                     # ----------------------
                     if ms.gltype == 4:
-                        obverts = myobj.data.vertices
+                        obverts = get_mesh_vertices(myobj)
                         a_p1 = get_point(obverts[ms.glpointa].co, myobj)
                         b_p1 = get_location(bpy.data.objects[ms.gllink])
                     # ----------------------
@@ -173,11 +169,7 @@ def draw_segments(context, myobj, op, region, rv3d):
                     # Vertex to origin
                     # ----------------------
                     if ms.gltype == 6:
-                        if myobj.mode == 'EDIT':
-                            bm = bmesh.from_edit_mesh(myobj.data)
-                            obverts = bm.verts
-                        else:
-                            obverts = myobj.data.vertices
+                        obverts = get_mesh_vertices(myobj)
                         a_p1 = (0, 0, 0)
                         b_p1 = get_point(obverts[ms.glpointa].co, myobj)
                     # ----------------------
@@ -186,17 +178,37 @@ def draw_segments(context, myobj, op, region, rv3d):
                     if ms.gltype == 7:
                         a_p1 = (0, 0, 0)
                         b_p1 = get_location(myobj)
+                    # ----------------------
+                    # Angle
+                    # ----------------------
+                    if ms.gltype == 9:
+                        obverts = get_mesh_vertices(myobj)
+                        if ms.glpointa <= len(obverts) and ms.glpointb <= len(obverts) and ms.glpointc <= len(obverts):
+                            an_p1 = get_point(obverts[ms.glpointa].co, myobj)
+                            an_p2 = get_point(obverts[ms.glpointb].co, myobj)
+                            an_p3 = get_point(obverts[ms.glpointc].co, myobj)
+
+                            ang_1 = mathutils.Vector((an_p1[0] - an_p2[0], an_p1[1] - an_p2[1], an_p1[2] - an_p2[2]))
+                            ang_2 = mathutils.Vector((an_p3[0] - an_p2[0], an_p3[1] - an_p2[1], an_p3[2] - an_p2[2]))
+
+                            ang_3 = ang_1 + ang_2  # Result vector
+
+                        a_p1 = (an_p2[0], an_p2[1], an_p2[2])
+                        b_p1 = (0, 0, 0)
 
                     dist = distance(a_p1, b_p1)
                     # ------------------------------------
                     # get normal vector
                     # ------------------------------------
-                    loc = get_location(myobj)
-                    midpoint3d = interpolate3d(a_p1, b_p1, math.fabs(dist / 2))
                     if ms.gldefault is True:
-                        vn = mathutils.Vector((midpoint3d[0] - loc[0],
-                                               midpoint3d[1] - loc[1],
-                                               midpoint3d[2] - loc[2]))
+                        if ms.gltype != 9:
+                            loc = get_location(myobj)
+                            midpoint3d = interpolate3d(a_p1, b_p1, math.fabs(dist / 2))
+                            vn = mathutils.Vector((midpoint3d[0] - loc[0],
+                                                   midpoint3d[1] - loc[1],
+                                                   midpoint3d[2] - loc[2]))
+                        else:
+                            vn = ang_3  # if angle, vector is angle position
                     else:
                         vn = mathutils.Vector((ms.glnormalx, ms.glnormaly, ms.glnormalz))
 
@@ -250,7 +262,7 @@ def draw_segments(context, myobj, op, region, rv3d):
                     # Text (distance)
                     # ------------------------------------
                     # noinspection PyBroadException
-                    if ms.gltype != 2:
+                    if ms.gltype != 2 and ms.gltype != 9:
                         # noinspection PyBroadException
                         try:
                             midpoint3d = interpolate3d(v1, v2, math.fabs(dist / 2))
@@ -333,16 +345,28 @@ def draw_segments(context, myobj, op, region, rv3d):
                         except:
                             pass
                     # ------------------------------------
-                    # Text (label)
+                    # Text (label) and Angles
                     # ------------------------------------
                     # noinspection PyBroadException
-                    if ms.gltype == 2:
+                    if ms.gltype == 2 or ms.gltype == 9:
                         # noinspection PyBroadException
                         try:
-                            tx_dist = " " + ms.gltxt
+                            if ms.gltype == 2:
+                                tx_dist = " " + ms.gltxt
+                                right = False
+                            else:
+                                ang = ang_1.angle(ang_2)
+                                right = True
+                                if bpy.context.scene.unit_settings.system_rotation == "DEGREES":
+                                    ang = math.degrees(ang)
+
+                                tx_dist = " " + fmt % ang
+                                if scene.measureit_gl_show_n is True:
+                                    tx_dist += " " + ms.gltxt
+
                             gap3d = (v11[0], v11[1], v11[2])
                             txtpoint2d = view3d_utils.location_3d_to_region_2d(region, rv3d, gap3d)
-                            draw_text(txtpoint2d[0], txtpoint2d[1], tx_dist, rgb, fsize)
+                            draw_text(txtpoint2d[0], txtpoint2d[1], tx_dist, rgb, fsize, right)
                         except:
                             pass
                     # ------------------------------------
@@ -360,6 +384,22 @@ def draw_segments(context, myobj, op, region, rv3d):
                     if ms.gltype == 3 or ms.gltype == 4 or ms.gltype == 5 or ms.gltype == 8 \
                             or ms.gltype == 6 or ms.gltype == 7:  # Origin and Links
                         draw_line(screen_point_ap1, screen_point_bp1)
+
+                    if ms.gltype == 9:  # Angle
+                        dist = distance(an_p1, an_p2)
+                        mp1 = interpolate3d(an_p1, an_p2, math.fabs(dist / 1.1))
+
+                        dist = distance(an_p3, an_p2)
+                        mp2 = interpolate3d(an_p3, an_p2, math.fabs(dist / 1.1))
+
+                        screen_point_an_p1 = view3d_utils.location_3d_to_region_2d(region, rv3d, mp1)
+                        screen_point_an_p2 = view3d_utils.location_3d_to_region_2d(region, rv3d, an_p2)
+                        screen_point_an_p3 = view3d_utils.location_3d_to_region_2d(region, rv3d, mp2)
+
+                        draw_line(screen_point_an_p1, screen_point_an_p2)
+                        draw_line(screen_point_an_p2, screen_point_an_p3)
+                        draw_line(screen_point_an_p1, screen_point_an_p3)
+
                 except:
                     # if error, disable segment
                     ms.glfree = True
@@ -466,6 +506,20 @@ def get_location(mainobject):
 
 
 # --------------------------------------------------------------------
+# Get vertex data
+# mainobject
+# --------------------------------------------------------------------
+def get_mesh_vertices(myobj):
+    if myobj.mode == 'EDIT':
+        bm = bmesh.from_edit_mesh(myobj.data)
+        obverts = bm.verts
+    else:
+        obverts = myobj.data.vertices
+
+    return obverts
+
+
+# --------------------------------------------------------------------
 # rotate point EULER X
 # v1: point
 # rad: Angles of rotation in Radians
@@ -517,6 +571,7 @@ def rotate_z(v1, rot):
     v2[2] = v1[2]
 
     return v2
+
 
 # --------------------------------------------------------------------
 # Get position for scale text

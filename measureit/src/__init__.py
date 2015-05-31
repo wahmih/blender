@@ -31,7 +31,7 @@ bl_info = {
     "name": "MeasureIt",
     "author": "Antonio Vazquez (antonioya)",
     "location": "View3D > Tools Panel /Properties panel",
-    "version": (1, 2, 0),
+    "version": (1, 3, 0),
     "blender": (2, 7, 4),
     "description": "Tools for measuring objects.",
     "category": "3D View"}
@@ -76,6 +76,7 @@ from bpy.props import *
 def register():
     bpy.utils.register_class(measureit_main.RunHintDisplayButton)
     bpy.utils.register_class(measureit_main.AddSegmentButton)
+    bpy.utils.register_class(measureit_main.AddAngleButton)
     bpy.utils.register_class(measureit_main.AddLabelButton)
     bpy.utils.register_class(measureit_main.AddLinkButton)
     bpy.utils.register_class(measureit_main.AddOriginButton)
@@ -180,6 +181,7 @@ def register():
 def unregister():
     bpy.utils.unregister_class(measureit_main.RunHintDisplayButton)
     bpy.utils.unregister_class(measureit_main.AddSegmentButton)
+    bpy.utils.unregister_class(measureit_main.AddAngleButton)
     bpy.utils.unregister_class(measureit_main.AddLabelButton)
     bpy.utils.unregister_class(measureit_main.AddLinkButton)
     bpy.utils.unregister_class(measureit_main.AddOriginButton)

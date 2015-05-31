@@ -36,3 +36,10 @@ Changes in version 1.2
 - Precision allows 0.
 - Fix error after loading new .blend.
 
+Changes in version 1.3
+=============================
+- New Mesh angles.
+- Show measure changes in EDIT mode.
+- Cleaning measures not used when saving.
+- Small bug fixing.
+

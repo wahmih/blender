@@ -43,17 +43,51 @@ from bpy.app.handlers import persistent
 def load_handler(dummy):
     RunHintDisplayButton.handle_remove(None, bpy.context)
 
+
+# ------------------------------------------------------
+# Handler to detect save Blend
+# Clear not used measured
+#
+# ------------------------------------------------------
+# noinspection PyUnusedLocal
+@persistent
+def save_handler(dummy):
+    # noinspection PyBroadException
+    try:
+        print("MeasureIt: Cleaning data")
+        objlist = bpy.context.scene.objects
+        for myobj in objlist:
+            if 'MeasureGenerator' in myobj:
+                mp = myobj.MeasureGenerator[0]
+                x = 0
+                for ms in mp.measureit_segments:
+                    ms.name = "segment_" + str(x)
+                    x += 1
+                    if ms.glfree is True:
+                        idx = mp.measureit_segments.find(ms.name)
+                        if idx > -1:
+                            print("MeasureIt: Removed segment not used")
+                            mp.measureit_segments.remove(idx)
+
+                # reset size
+                mp.measureit_num = len(mp.measureit_segments)
+    except:
+        pass
 bpy.app.handlers.load_post.append(load_handler)
+bpy.app.handlers.save_pre.append(save_handler)
+
 
 # ------------------------------------------------------------------
 # Define property group class for measureit data
 # ------------------------------------------------------------------
 class MeasureitProperties(bpy.types.PropertyGroup):
     gltype = bpy.props.IntProperty(name="gltype",
-                                   description="Measure type (1-Segment, 2-Label)", default=1)
+                                   description="Measure type (1-Segment, 2-Label, etc..)", default=1)
     glpointa = bpy.props.IntProperty(name="glpointa",
                                      description="Hidden property for opengl")
     glpointb = bpy.props.IntProperty(name="glpointb",
+                                     description="Hidden property for opengl")
+    glpointc = bpy.props.IntProperty(name="glpointc",
                                      description="Hidden property for opengl")
     glcolor = bpy.props.FloatVectorProperty(name="glcolor",
                                             description="Color for the measure",
@@ -137,7 +171,11 @@ class MeasureitEditPanel(bpy.types.Panel):
         if 'MeasureGenerator' not in o:
             return False
         else:
-            return True
+            mp = context.object.MeasureGenerator[0]
+            if mp.measureit_num > 0:
+                return True
+            else:
+                return False
 
     # -----------------------------------------------------
     # Draw (create UI interface)
@@ -244,6 +282,7 @@ class MeasureitMainPanel(bpy.types.Panel):
         box.label("Tools", icon='MODIFIER')
         row = box.row()
         row.operator("measureit.addsegmentbutton", text="Segment", icon="ALIGN")
+        row.operator("measureit.addanglebutton", text="Angle", icon="LINCURVE")
         row.operator("measureit.addlabelbutton", text="Label", icon="FONT_DATA")
         row = box.row()
         row.operator("measureit.addlinkbutton", text="Link", icon="ROTATECENTER")
@@ -340,6 +379,85 @@ class AddSegmentButton(bpy.types.Operator):
             else:
                 self.report({'ERROR'},
                             "MeasureIt: Select two vertices for creating measure segment")
+                return {'FINISHED'}
+        else:
+            self.report({'WARNING'},
+                        "View3D not found, cannot run operator")
+
+        return {'CANCELLED'}
+
+
+# -------------------------------------------------------------
+# Defines button for add a arngle
+#
+# -------------------------------------------------------------
+class AddAngleButton(bpy.types.Operator):
+    bl_idname = "measureit.addanglebutton"
+    bl_label = "Angle"
+    bl_description = "(EDITMODE only) Add a new angle measure (select 3 vertices, 2nd is angle vertex)"
+    bl_category = 'Measureit'
+
+    # ------------------------------
+    # Poll
+    # ------------------------------
+    @classmethod
+    def poll(cls, context):
+        o = context.object
+        if o is None:
+            return False
+        else:
+            if o.type == "MESH":
+                if bpy.context.mode == 'EDIT_MESH':
+                    return True
+                else:
+                    return False
+            else:
+                return False
+
+    # ------------------------------
+    # Execute button action
+    # ------------------------------
+    def execute(self, context):
+        if context.area.type == 'VIEW_3D':
+            # Add properties
+            scene = context.scene
+            mainobject = context.object
+            mylist = get_selected_vertex_history(mainobject)
+            if len(mylist) == 3:
+                if 'MeasureGenerator' not in mainobject:
+                    mainobject.MeasureGenerator.add()
+
+                mp = mainobject.MeasureGenerator[0]
+                # -----------------------
+                # Only if not exist
+                # -----------------------
+                if exist_segment(mp, mylist[0], mylist[1], 9, mylist[2]) is False:
+                    # Create all array elements
+                    for cont in range(len(mp.measureit_segments) - 1, mp.measureit_num):
+                        mp.measureit_segments.add()
+
+                    # Set values
+                    ms = mp.measureit_segments[mp.measureit_num]
+                    ms.gltype = 9
+                    ms.glpointa = mylist[0]
+                    ms.glpointb = mylist[1]
+                    ms.glpointc = mylist[2]
+                    # color
+                    ms.glcolor = scene.measureit_default_color
+                    # dist
+                    ms.glspace = scene.measureit_hint_space
+                    # text
+                    ms.gltxt = scene.measureit_gl_txt
+                    ms.glfont_size = scene.measureit_font_size
+                    # Add index
+                    mp.measureit_num += 1
+
+                # redraw
+                context.area.tag_redraw()
+                return {'FINISHED'}
+            else:
+                self.report({'ERROR'},
+                            "MeasureIt: Select three vertices for creating angle measure")
                 return {'FINISHED'}
         else:
             self.report({'WARNING'},
@@ -686,7 +804,6 @@ class DeleteSegmentButton(bpy.types.Operator):
             # Delete element
             mp.measureit_segments.remove(self.tag)
             mp.measureit_num -= 1
-
             # redraw
             context.area.tag_redraw()
             return {'FINISHED'}
@@ -763,14 +880,18 @@ def draw_callback_px(self, context):
 # Check if the segment already exist
 #
 # -------------------------------------------------------------
-def exist_segment(mp, pointa, pointb, typ=1):
+def exist_segment(mp, pointa, pointb, typ=1, pointc=None):
     #  for ms in mp.measureit_segments[mp.measureit_num]
     for ms in mp.measureit_segments:
         if ms.gltype == typ and ms.glfree is False:
-            if ms.glpointa == pointa and ms.glpointb == pointb:
-                return True
-            if ms.glpointa == pointb and ms.glpointb == pointa:
-                return True
+            if typ != 9:
+                if ms.glpointa == pointa and ms.glpointb == pointb:
+                    return True
+                if ms.glpointa == pointb and ms.glpointb == pointa:
+                    return True
+            else:
+                if ms.glpointa == pointa and ms.glpointb == pointb and ms.glpointc == pointc:
+                    return True
 
     return False
 
@@ -778,7 +899,6 @@ def exist_segment(mp, pointa, pointb, typ=1):
 # -------------------------------------------------------------
 # Get vertex selected
 # -------------------------------------------------------------
-# obverts = bpy.context.active_object.data.vertices
 def get_selected_vertex(myobject):
     mylist = []
     # if not mesh, no vertex
@@ -806,7 +926,37 @@ def get_selected_vertex(myobject):
     bpy.context.scene.objects.active = oldobj
 
     # if select all vertices, then use origin
-    if  tv == len(mylist):
+    if tv == len(mylist):
         return []
+
+    return mylist
+
+
+# -------------------------------------------------------------
+# Get vertex selected
+# -------------------------------------------------------------
+def get_selected_vertex_history(myobject):
+    mylist = []
+    # if not mesh, no vertex
+    if myobject.type != "MESH":
+        return mylist
+    # --------------------
+    # meshes
+    # --------------------
+    oldobj = bpy.context.object
+    bpy.context.scene.objects.active = myobject
+    flag = False
+    if myobject.mode != 'EDIT':
+        bpy.ops.object.mode_set(mode='EDIT')
+        flag = True
+
+    bm = bmesh.from_edit_mesh(myobject.data)
+    for v in bm.select_history:
+        mylist.extend([v.index])
+
+    if flag is True:
+        bpy.ops.object.editmode_toggle()
+    # Back context object
+    bpy.context.scene.objects.active = oldobj
 
     return mylist
