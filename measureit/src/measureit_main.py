@@ -129,6 +129,18 @@ class MeasureitProperties(bpy.types.PropertyGroup):
                                         default=14, min=10, max=150)
     gllink = bpy.props.StringProperty(name="gllink",
                                       description="linked object for linked measures")
+    glocwarning = bpy.props.BoolProperty(name="glocwarning",
+                                         description="Display a warning if some axis is not used in distance",
+                                         default=True)
+    glocx = bpy.props.BoolProperty(name="glocx",
+                                   description="Include changes in X axis for calculating the distance",
+                                   default=True)
+    glocy = bpy.props.BoolProperty(name="glocy",
+                                   description="Include changes in Y axis for calculating the distance",
+                                   default=True)
+    glocz = bpy.props.BoolProperty(name="glocz",
+                                   description="Include changes in Z axis for calculating the distance",
+                                   default=True)
 
 # Register
 bpy.utils.register_class(MeasureitProperties)
@@ -227,6 +239,9 @@ class MeasureitEditPanel(bpy.types.Panel):
                         if mp.measureit_segments[idx].glfree is False:
                             add_item(box, idx, mp.measureit_segments[idx])
 
+                row = box.row()
+                row.operator("measureit.deleteallsegmentbutton", text="Delete all", icon="X")
+
 
 # -----------------------------------------------------
 # Add segment to the panel.
@@ -256,6 +271,14 @@ def add_item(box, idx, segment):
             row.prop(segment, 'glnormalx', text="X")
             row.prop(segment, 'glnormaly', text="Y")
             row.prop(segment, 'glnormalz', text="Z")
+        # Loc axis
+        row = box.row(True)
+        row.prop(segment, 'glocx', text="X", toggle=True)
+        row.prop(segment, 'glocy', text="Y", toggle=True)
+        row.prop(segment, 'glocz', text="Z", toggle=True)
+        if segment.glocx is False or segment.glocy is False or segment.glocz is False:
+            row = box.row()
+            row.prop(segment, 'glocwarning', text="Display warning")
 
 
 # ------------------------------------------------------------------
@@ -316,7 +339,7 @@ class MeasureitMainPanel(bpy.types.Panel):
 class AddSegmentButton(bpy.types.Operator):
     bl_idname = "measureit.addsegmentbutton"
     bl_label = "Add"
-    bl_description = "(EDITMODE only) Add a new measure segment (select 2 vertices)"
+    bl_description = "(EDITMODE only) Add a new measure segment (select 2 vertices or more. Do no use loop selection)"
     bl_category = 'Measureit'
 
     # ------------------------------
@@ -344,41 +367,43 @@ class AddSegmentButton(bpy.types.Operator):
             # Add properties
             scene = context.scene
             mainobject = context.object
-            mylist = get_selected_vertex(mainobject)
-            if len(mylist) == 2:
+            mylist = get_smart_selected(mainobject)
+            if len(mylist) >= 2:
                 if 'MeasureGenerator' not in mainobject:
                     mainobject.MeasureGenerator.add()
 
                 mp = mainobject.MeasureGenerator[0]
-                # -----------------------
-                # Only if not exist
-                # -----------------------
-                if exist_segment(mp, mylist[0], mylist[1]) is False:
-                    # Create all array elements
-                    for cont in range(len(mp.measureit_segments) - 1, mp.measureit_num):
-                        mp.measureit_segments.add()
+                for x in range(0, len(mylist) - 1, 2):
+                    # -----------------------
+                    # Only if not exist
+                    # -----------------------
+                    if exist_segment(mp, mylist[x], mylist[x + 1]) is False:
+                        # Create all array elements
+                        for cont in range(len(mp.measureit_segments) - 1, mp.measureit_num):
+                            mp.measureit_segments.add()
 
-                    # Set values
-                    ms = mp.measureit_segments[mp.measureit_num]
-                    ms.gltype = 1
-                    ms.glpointa = mylist[0]
-                    ms.glpointb = mylist[1]
-                    # color
-                    ms.glcolor = scene.measureit_default_color
-                    # dist
-                    ms.glspace = scene.measureit_hint_space
-                    # text
-                    ms.gltxt = scene.measureit_gl_txt
-                    ms.glfont_size = scene.measureit_font_size
-                    # Add index
-                    mp.measureit_num += 1
+                        # Set values
+                        ms = mp.measureit_segments[mp.measureit_num]
+                        ms.gltype = 1
+                        ms.glpointa = mylist[x]
+                        ms.glpointb = mylist[x + 1]
+                        # color
+                        ms.glcolor = scene.measureit_default_color
+                        # dist
+                        ms.glspace = scene.measureit_hint_space
+                        # text
+                        ms.gltxt = scene.measureit_gl_txt
+                        ms.glfont_size = scene.measureit_font_size
+                        # Add index
+                        mp.measureit_num += 1
 
                 # redraw
                 context.area.tag_redraw()
                 return {'FINISHED'}
             else:
                 self.report({'ERROR'},
-                            "MeasureIt: Select two vertices for creating measure segment")
+                            "MeasureIt: Select at least two vertices for creating measure segment. "
+                            "Do no use loop select")
                 return {'FINISHED'}
         else:
             self.report({'WARNING'},
@@ -815,6 +840,41 @@ class DeleteSegmentButton(bpy.types.Operator):
 
 
 # -------------------------------------------------------------
+# Defines button for delete all measure segment
+#
+# -------------------------------------------------------------
+class DeleteAllSegmentButton(bpy.types.Operator):
+    bl_idname = "measureit.deleteallsegmentbutton"
+    bl_label = "Delete"
+    bl_description = "Delete all measures (it cannot be undone)"
+    bl_category = 'Measureit'
+    tag = bpy.props.IntProperty()
+
+    # ------------------------------
+    # Execute button action
+    # ------------------------------
+    def execute(self, context):
+        if context.area.type == 'VIEW_3D':
+            # Add properties
+            mainobject = context.object
+            mp = mainobject.MeasureGenerator[0]
+
+            while len(mp.measureit_segments) > 0:
+                mp.measureit_segments.remove(0)
+
+            # reset size
+            mp.measureit_num = len(mp.measureit_segments)
+            # redraw
+            context.area.tag_redraw()
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'},
+                        "View3D not found, cannot run operator")
+
+        return {'CANCELLED'}
+
+
+# -------------------------------------------------------------
 # Defines button for enable/disable the tip display
 #
 # -------------------------------------------------------------
@@ -953,6 +1013,38 @@ def get_selected_vertex_history(myobject):
     bm = bmesh.from_edit_mesh(myobject.data)
     for v in bm.select_history:
         mylist.extend([v.index])
+
+    if flag is True:
+        bpy.ops.object.editmode_toggle()
+    # Back context object
+    bpy.context.scene.objects.active = oldobj
+
+    return mylist
+
+
+# -------------------------------------------------------------
+# Get vertex selected segments
+# -------------------------------------------------------------
+def get_smart_selected(myobject):
+    mylist = []
+    # if not mesh, no vertex
+    if myobject.type != "MESH":
+        return mylist
+    # --------------------
+    # meshes
+    # --------------------
+    oldobj = bpy.context.object
+    bpy.context.scene.objects.active = myobject
+    flag = False
+    if myobject.mode != 'EDIT':
+        bpy.ops.object.mode_set(mode='EDIT')
+        flag = True
+
+    bm = bmesh.from_edit_mesh(myobject.data)
+    for e in bm.edges:
+        if e.select is True:
+            mylist.extend([e.verts[0].index])
+            mylist.extend([e.verts[1].index])
 
     if flag is True:
         bpy.ops.object.editmode_toggle()

@@ -90,6 +90,8 @@ def draw_main(context):
 # -------------------------------------------------------------
 def draw_segments(context, myobj, op, region, rv3d):
     if op.measureit_num > 0:
+        a_code = "\u00b0"
+        scale = bpy.context.scene.unit_settings.scale_length
         scene = bpy.context.scene
         pr = scene.measureit_gl_precision
         fmt = "%1." + str(pr) + "f"
@@ -196,7 +198,8 @@ def draw_segments(context, myobj, op, region, rv3d):
                         a_p1 = (an_p2[0], an_p2[1], an_p2[2])
                         b_p1 = (0, 0, 0)
 
-                    dist = distance(a_p1, b_p1)
+                    # Calculate distance
+                    dist, distloc = distance(a_p1, b_p1, ms.glocx, ms.glocy, ms.glocz)
                     # ------------------------------------
                     # get normal vector
                     # ------------------------------------
@@ -221,7 +224,6 @@ def draw_segments(context, myobj, op, region, rv3d):
                     if s > ms.glspace:
                         s = ms.glspace / 5
                     vi2 = vn * (ms.glspace + s)
-
                     # ------------------------------------
                     # apply vector
                     # ------------------------------------
@@ -271,65 +273,75 @@ def draw_segments(context, myobj, op, region, rv3d):
                             # Scale
                             if scene.measureit_scale is True:
                                 dist = dist * scene.measureit_scale_factor
+                                distloc = distloc * scene.measureit_scale_factor
 
+                            # decide dist to use
+                            if dist == distloc:
+                                locflag = False
+                                usedist = dist
+                            else:
+                                usedist = distloc
+                                locflag = True
+                            # Apply scene scale
+                            usedist *= scale
                             # ------------------------
                             # Units automatic
                             # ------------------------
                             if units == "1":
                                 # Units
                                 if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                                    feet = dist * 3.2808399
+                                    feet = usedist * 3.2808399
                                     inches = (feet * 12) % 12
                                     if feet >= 1.0:
                                         tx_dist = fmt % feet + " ft"
                                     else:
                                         tx_dist = fmt % inches + " in"
                                 elif bpy.context.scene.unit_settings.system == "METRIC":
-                                    if dist >= 1.0:
-                                        tx_dist = fmt % dist + " m"
+                                    if usedist >= 1.0:
+                                        tx_dist = fmt % usedist + " m"
                                     else:
-                                        if dist >= 0.01:
-                                            d_cm = dist * 100
+                                        if usedist >= 0.01:
+                                            d_cm = usedist * 100
                                             tx_dist = fmt % d_cm + " cm"
                                         else:
-                                            d_mm = dist * 1000
+                                            d_mm = usedist * 1000
                                             tx_dist = fmt % d_mm + " mm"
                                 else:
-                                    tx_dist = fmt % dist
+                                    tx_dist = fmt % usedist
                             # ------------------------
                             # Units meters
                             # ------------------------
                             elif units == "2":
-                                tx_dist = fmt % dist + " m"
+                                tx_dist = fmt % usedist + " m"
                             # ------------------------
                             # Units centimeters
                             # ------------------------
                             elif units == "3":
-                                d_cm = dist * 100
+                                d_cm = usedist * 100
                                 tx_dist = fmt % d_cm + " cm"
                             # ------------------------
                             # Units milimiters
                             # ------------------------
                             elif units == "4":
-                                d_mm = dist * 1000
+                                d_mm = usedist * 1000
                                 tx_dist = fmt % d_mm + " mm"
                             # ------------------------
                             # Units feet
                             # ------------------------
                             elif units == "5":
-                                feet = dist * 3.2808399
+                                feet = usedist * 3.2808399
                                 tx_dist = fmt % feet + " ft"
                             # ------------------------
                             # Units inches
                             # ------------------------
                             elif units == "6":
-                                inches = dist * 39.3700787
+                                inches = usedist * 39.3700787
                                 tx_dist = fmt % inches + " in"
                             # ------------------------
                             # Default
                             # ------------------------
                             else:
-                                tx_dist = fmt % dist
+                                tx_dist = fmt % usedist
 
                             # -----------------------------------
                             # Draw text
@@ -342,6 +354,22 @@ def draw_segments(context, myobj, op, region, rv3d):
                                 msg += ms.gltxt
                             if scene.measureit_gl_show_d is True or scene.measureit_gl_show_n is True:
                                 draw_text(txtpoint2d[0], txtpoint2d[1], msg, rgb, fsize)
+
+                            # ------------------------------
+                            # if axis loc, show a indicator
+                            # ------------------------------
+                            if locflag is True and ms.glocwarning is True:
+                                txtpoint2d = view3d_utils.location_3d_to_region_2d(region, rv3d, (v2[0], v2[1], v2[2]))
+                                txt = "["
+                                if ms.glocx is True:
+                                    txt += "X"
+                                if ms.glocy is True:
+                                    txt += "Y"
+                                if ms.glocz is True:
+                                    txt += "Z"
+                                txt += "]"
+                                draw_text(txtpoint2d[0], txtpoint2d[1], txt, rgb, fsize-1)
+
                         except:
                             pass
                     # ------------------------------------
@@ -354,13 +382,17 @@ def draw_segments(context, myobj, op, region, rv3d):
                             if ms.gltype == 2:
                                 tx_dist = " " + ms.gltxt
                                 right = False
-                            else:
+                            else:  # Angles
                                 ang = ang_1.angle(ang_2)
                                 right = True
                                 if bpy.context.scene.unit_settings.system_rotation == "DEGREES":
                                     ang = math.degrees(ang)
 
                                 tx_dist = " " + fmt % ang
+                                # Add degree symbol
+                                if bpy.context.scene.unit_settings.system_rotation == "DEGREES":
+                                    tx_dist += a_code
+
                                 if scene.measureit_gl_show_n is True:
                                     tx_dist += " " + ms.gltxt
 
@@ -386,10 +418,10 @@ def draw_segments(context, myobj, op, region, rv3d):
                         draw_line(screen_point_ap1, screen_point_bp1)
 
                     if ms.gltype == 9:  # Angle
-                        dist = distance(an_p1, an_p2)
+                        dist, distloc = distance(an_p1, an_p2)
                         mp1 = interpolate3d(an_p1, an_p2, math.fabs(dist / 1.1))
 
-                        dist = distance(an_p3, an_p2)
+                        dist, distloc = distance(an_p3, an_p2)
                         mp2 = interpolate3d(an_p3, an_p2, math.fabs(dist / 1.1))
 
                         screen_point_an_p1 = view3d_utils.location_3d_to_region_2d(region, rv3d, mp1)
@@ -448,11 +480,28 @@ def draw_line(v1, v2):
 # Distance between 2 points in 3D space
 # v1: first point
 # v2: second point
+# locx/y/z: Use this axis
 # return: distance
 # --------------------------------------------------------------------
-def distance(v1, v2):
+def distance(v1, v2, locx=True, locy=True, locz=True):
     x = math.sqrt((v2[0] - v1[0]) ** 2 + (v2[1] - v1[1]) ** 2 + (v2[2] - v1[2]) ** 2)
-    return x
+
+    # If axis is not used, make equal both (no distance)
+    v1b = [v1[0], v1[1], v1[2]]
+    v2b = [v2[0], v2[1], v2[2]]
+    if locx is False:
+        v1b[0] = 0
+        v2b[0] = 0
+    if locy is False:
+        v1b[1] = 0
+        v2b[1] = 0
+    if locz is False:
+        v1b[2] = 0
+        v2b[2] = 0
+
+    xloc = math.sqrt((v2b[0] - v1b[0]) ** 2 + (v2b[1] - v1b[1]) ** 2 + (v2b[2] - v1b[2]) ** 2)
+
+    return x, xloc
 
 
 # --------------------------------------------------------------------
@@ -466,7 +515,8 @@ def interpolate3d(v1, v2, d1):
     # calculate vector
     v = (v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2])
     # calculate distance between points
-    d0 = distance(v1, v2)
+    d0, dloc = distance(v1, v2)
+
     # calculate interpolate factor (distance from origin / distance total)
     # if d1 > d0, the point is projected in 3D space
     if d0 > 0:
@@ -517,60 +567,6 @@ def get_mesh_vertices(myobj):
         obverts = myobj.data.vertices
 
     return obverts
-
-
-# --------------------------------------------------------------------
-# rotate point EULER X
-# v1: point
-# rad: Angles of rotation in Radians
-# --------------------------------------------------------------------
-def rotate_x(v1, rot):
-    v2 = [0, 0, 0]
-
-    radx = rot[0]
-
-    # X axis
-    v2[0] = v1[0]
-    v2[1] = v1[1] * math.cos(radx) - v1[2] * math.sin(radx)
-    v2[2] = v1[1] * math.sin(radx) + v1[2] * math.cos(radx)
-
-    return v2
-
-
-# --------------------------------------------------------------------
-# rotate point EULER Y
-# v1: point
-# rad: Angles of rotation in Radians
-# --------------------------------------------------------------------
-def rotate_y(v1, rot):
-    v2 = [0, 0, 0]
-
-    rady = rot[1]
-
-    # Y axis
-    v2[0] = v1[0] * math.cos(rady) + v1[2] * math.sin(rady)
-    v2[1] = v1[1]
-    v2[2] = v1[2] * math.cos(rady) - v1[0] * math.sin(rady)
-
-    return v2
-
-
-# --------------------------------------------------------------------
-# rotate point EULER Z
-# v1: point
-# rad: Angles of rotation in Radians
-# --------------------------------------------------------------------
-def rotate_z(v1, rot):
-    v2 = [0, 0, 0]
-
-    radz = rot[2]
-
-    # Z axis
-    v2[0] = v1[0] * math.cos(radz) - v1[1] * math.sin(radz)
-    v2[1] = v1[0] * math.sin(radz) + v1[1] * math.cos(radz)
-    v2[2] = v1[2]
-
-    return v2
 
 
 # --------------------------------------------------------------------
