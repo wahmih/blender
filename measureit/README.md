@@ -46,9 +46,10 @@ Changes in version 1.3
 
 Changes in version 1.4
 =============================
-- Now several segments can be created at the same time slecting by vertex, edge, face or edge loops.
+- Now several segments can be created at the same time selecting by vertex, edge, face or edge loops.
 - Now you can use or not selected axis in distances.
 - Added degrees symbol to angles.
 - New button for deleting all object measures
 - Fixed bug if scene scale is different of 1.
 
+ Video: https://youtu.be/nu3hxPSBLsU
