@@ -368,6 +368,9 @@ class AddSegmentButton(bpy.types.Operator):
             scene = context.scene
             mainobject = context.object
             mylist = get_smart_selected(mainobject)
+            if len(mylist) < 2:  # if not selected linked vertex
+                mylist = get_selected_vertex(mainobject)
+
             if len(mylist) >= 2:
                 if 'MeasureGenerator' not in mainobject:
                     mainobject.MeasureGenerator.add()

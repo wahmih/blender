@@ -53,3 +53,7 @@ Changes in version 1.4
 - Fixed bug if scene scale is different of 1.
 
  Video: https://youtu.be/nu3hxPSBLsU
+
+Changes in version 1.4.1
+=============================
+- Fixed bug if vertex are not linked by edge
