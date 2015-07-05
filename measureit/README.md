@@ -57,3 +57,25 @@ Changes in version 1.4
 Changes in version 1.4.1
 =============================
 - Fixed bug if vertex are not linked by edge
+
+Changes in version 1.5
+=============================
+
+Note: REMOVE previous version before installing V1.5
+
+- New: Measures can be rendered (opengl and final render).
+- New: Arc measures with radio, angle and length.
+- New: Sum automatically several segments.
+- New: Calculate Areas. Edit and Object mode.
+- New: Arrows (line, triangle, TShape).
+- New: Vertex to origin in one axis measure.
+- New: Text can be multiline using pipe (|).
+- New: Create annotations.
+- New: Display orthogonal segments.
+- Improved customization options and UI.
+- Fixed error for Quadview.
+- Fixed error for Object to vertex link.
+- Fixed error on alpha for lines.
+- Small bug fixing.
+- Tested on versions 2.74 and 2.75.
+
