@@ -79,3 +79,9 @@ Note: REMOVE previous version before installing V1.5
 - Small bug fixing.
 - Tested on versions 2.74 and 2.75.
 
+Demo video: http://youtu.be/hiEZxnPHq70
+
+Also, I have created a basic tutorial of how create a Blueprint.
+
+How create a Blueprint: http://youtu.be/Qb1U7g4JFbA
+
