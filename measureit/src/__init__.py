@@ -31,7 +31,7 @@ bl_info = {
     "name": "MeasureIt",
     "author": "Antonio Vazquez (antonioya)",
     "location": "View3D > Tools Panel /Properties panel",
-    "version": (1, 5, 0),
+    "version": (1, 5, 1),
     "blender": (2, 7, 4),
     "description": "Tools for measuring objects.",
     "category": "3D View"}
