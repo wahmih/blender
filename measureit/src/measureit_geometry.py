@@ -980,6 +980,7 @@ def draw_vertices(context, myobj, region, rv3d):
     scene = bpy.context.scene
     rgb = scene.measureit_debug_color
     fsize = scene.measureit_debug_font
+    precision = scene.measureit_debug_precision
     # --------------------
     # vertex Loop
     # --------------------
