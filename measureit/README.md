@@ -84,15 +84,15 @@ Demo video: http://youtu.be/hiEZxnPHq70
 Also, I have created a basic tutorial of how create a Blueprint.
 
 How create a Blueprint: http://youtu.be/Qb1U7g4JFbA
+Changes in version 1.5.1
+=============================
+- New funtion to include sum totals in text using <#letter>
+- Fixed error whith huge scaling.
+- Fixed error for labeling text position
 
 Changes in version 1.6
 =============================
 - Show button moved to top of the panel.
 - New debug meshes option.
 
-Changes in version 1.5.1
-=============================
-- New funtion to include sum totals in text using <#letter>
-- Fixed error whith huge scaling.
-- Fixed error for labeling text position
 
