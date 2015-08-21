@@ -1073,7 +1073,7 @@ def draw_faces(context, myobj, region, rv3d):
                 bgl.glColor4f(rgb2[0], rgb2[1], rgb2[2], rgb2[3])
                 draw_arrow(txtpoint2d, point2, 10, "99", "1")
 
-                if len(obverts) > 2:
+                if len(obverts) > 2 and scene.measureit_debug_normal_details is True:
                     if myobj.mode == 'EDIT':
                         i1 = f.verts[0].index
                         i2 = f.verts[1].index

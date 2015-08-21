@@ -95,4 +95,7 @@ Changes in version 1.6
 - Show button moved to top of the panel.
 - New debug meshes option.
 
+Changes in version 1.6.1
+=============================
+- Option to disable normal details.
 

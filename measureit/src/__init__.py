@@ -31,7 +31,7 @@ bl_info = {
     "name": "MeasureIt",
     "author": "Antonio Vazquez (antonioya)",
     "location": "View3D > Tools Panel /Properties panel",
-    "version": (1, 6, 0),
+    "version": (1, 6, 1),
     "blender": (2, 7, 4),
     "description": "Tools for measuring objects.",
     "category": "3D View"}
@@ -280,6 +280,9 @@ def register():
                                                                      description="Display face normal "
                                                                                  "vector and creation order",
                                                                      default=False)
+    bpy.types.Scene.measureit_debug_normal_details = bpy.props.BoolProperty(name="Details",
+                                                                            description="Display face normal details",
+                                                                            default=True)
     bpy.types.Scene.measureit_debug_font = bpy.props.IntProperty(name="Font",
                                                                  description="Debug text size",
                                                                  default=14, min=10, max=150)
@@ -374,6 +377,7 @@ def unregister():
     del bpy.types.Scene.measureit_debug_vertices
     del bpy.types.Scene.measureit_debug_faces
     del bpy.types.Scene.measureit_debug_normals
+    del bpy.types.Scene.measureit_debug_normal_details
     del bpy.types.Scene.measureit_debug_font
     del bpy.types.Scene.measureit_debug_color
     del bpy.types.Scene.measureit_debug_color2

@@ -687,7 +687,7 @@ class MeasureitMainPanel(bpy.types.Panel):
             row.prop(scene, "measureit_debug_normals", icon="MAN_TRANS")
             if scene.measureit_debug_normals is True:
                 row.prop(scene, "measureit_debug_normal_size")
-
+                row.prop(scene, "measureit_debug_normal_details")
             row = box.row()
             row.prop(scene, 'measureit_debug_color', text="")
             row.prop(scene, 'measureit_debug_color2', text="")
