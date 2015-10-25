@@ -96,3 +96,11 @@ Changes in version 1.1.0
 - Minor bug fixing.
  
 V1.1 video: http://youtu.be/fxIoDvJHl3Q
+
+Changes in version 1.1.1
+=============================
+- Fixed error with OSX.
+- Fixed incompatibility with windows generator install on same PC.
+- Some minor fix.
+
+This release contains changes in how the meshes are created due a change in Blender. Clear the archimesh folder before install new version.

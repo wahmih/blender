@@ -28,7 +28,7 @@
 import bpy
 import math
 import copy
-from arch_tools import *
+from achm_tools import *
 
 
 # ------------------------------------------------------
@@ -129,7 +129,7 @@ def set_preset(self):
 # Define UI class
 # Lamps
 # ------------------------------------------------------------------
-class LAMP(bpy.types.Operator):
+class AchmLamp(bpy.types.Operator):
     bl_idname = "mesh.archimesh_lamp"
     bl_label = "Lamp"
     bl_description = "Lamp Generator"

@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: curtain_maker.py
+# File: achm_curtain_maker.py
 # Automatic generation of curtains
 # Author: Antonio Vazquez (antonioya)
 #
@@ -30,14 +30,14 @@ import bpy
 import colorsys
 import copy
 import math
-from arch_tools import *
+from achm_tools import *
 
 
 # ------------------------------------------------------------------
 # Define UI class
 # Japanese curtains
 # ------------------------------------------------------------------
-class JAPAN(bpy.types.Operator):
+class AchmJapan(bpy.types.Operator):
     bl_idname = "mesh.archimesh_japan"
     bl_label = "Japanese curtains"
     bl_description = "Japanese curtains Generator"
@@ -147,7 +147,7 @@ def create_japan_mesh(self):
 # Define UI class
 # Roller curtains
 # ------------------------------------------------------------------
-class ROLLER(bpy.types.Operator):
+class AchmRoller(bpy.types.Operator):
     bl_idname = "mesh.archimesh_roller"
     bl_label = "Roller curtains"
     bl_description = "Roller_curtains Generator"

@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: stairs_maker.py
+# File: achm_stairs_maker.py
 # Automatic generation of stairs
 # Author: Antonio Vazquez (antonioya)
 #
@@ -28,14 +28,14 @@
 # noinspection PyUnresolvedReferences
 import bpy
 import math
-from arch_tools import *
+from achm_tools import *
 
 
 # ------------------------------------------------------------------
 # Define UI class
 # Stairs
 # ------------------------------------------------------------------
-class STAIRS(bpy.types.Operator):
+class AchmStairs(bpy.types.Operator):
     bl_idname = "mesh.archimesh_stairs"
     bl_label = "Stairs"
     bl_description = "Stairs Generator"

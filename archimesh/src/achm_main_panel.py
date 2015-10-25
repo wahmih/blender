@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: main_panel.py
+# File: achm_main_panel.py
 # Main panel for different Archimesh general actions
 # Author: Antonio Vazquez (antonioya)
 #
@@ -29,8 +29,8 @@
 import bpy
 # noinspection PyUnresolvedReferences
 import bgl
-from arch_tools import *
-from arch_gltools import *
+from achm_tools import *
+from achm_gltools import *
 
 
 # -----------------------------------------------------
@@ -49,7 +49,7 @@ def isboolean(myobject, childobject):
 # ------------------------------------------------------
 # Button: Action to link windows and doors
 # ------------------------------------------------------
-class HoleAction(bpy.types.Operator):
+class AchmHoleAction(bpy.types.Operator):
     bl_idname = "object.archimesh_cut_holes"
     bl_label = "Auto Holes"
     bl_description = "Enable windows and doors holes for any selected object (needs wall thickness)"
@@ -192,7 +192,7 @@ class HoleAction(bpy.types.Operator):
 # ------------------------------------------------------
 # Button: Action to create room from grease pencil 
 # ------------------------------------------------------
-class PencilAction(bpy.types.Operator):
+class AchmPencilAction(bpy.types.Operator):
     bl_idname = "object.archimesh_pencil_room"
     bl_label = "Room from Draw"
     bl_description = "Create a room base on grease pencil strokes (draw from top view (7 key))"
@@ -285,6 +285,10 @@ class PencilAction(bpy.types.Operator):
                     for e in range(1, i):
                         d = math.sqrt(
                             ((mypoints[e][0] - mypoints[e - 1][0]) ** 2) + ((mypoints[e][1] - mypoints[e - 1][1]) ** 2))
+                        # Imperial units if needed
+                        if bpy.context.scene.unit_settings.system == "IMPERIAL":
+                            d *= 3.2808399
+
                         distlist.extend([d])
                         
                         if debugmode is True:
@@ -520,7 +524,7 @@ class ArchimeshMainPanel(bpy.types.Panel):
 # Defines button for enable/disable the tip display
 #
 # -------------------------------------------------------------
-class RunHintDisplayButton(bpy.types.Operator):
+class AchmRunHintDisplayButton(bpy.types.Operator):
     bl_idname = "archimesh.runopenglbutton"
     bl_label = "Display hint data manager"
     bl_description = "Display aditional information in the viewport"
@@ -533,8 +537,8 @@ class RunHintDisplayButton(bpy.types.Operator):
     # ----------------------------------
     @staticmethod
     def handle_add(self, context):
-        if RunHintDisplayButton._handle is None:
-            RunHintDisplayButton._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_px, (self, context),
+        if AchmRunHintDisplayButton._handle is None:
+            AchmRunHintDisplayButton._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_px, (self, context),
                                                                                   'WINDOW',
                                                                                   'POST_PIXEL')
             context.window_manager.archimesh_run_opengl = True
@@ -545,9 +549,9 @@ class RunHintDisplayButton(bpy.types.Operator):
     # noinspection PyUnusedLocal
     @staticmethod
     def handle_remove(self, context):
-        if RunHintDisplayButton._handle is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(RunHintDisplayButton._handle, 'WINDOW')
-        RunHintDisplayButton._handle = None
+        if AchmRunHintDisplayButton._handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(AchmRunHintDisplayButton._handle, 'WINDOW')
+        AchmRunHintDisplayButton._handle = None
         context.window_manager.archimesh_run_opengl = False
 
     # ------------------------------

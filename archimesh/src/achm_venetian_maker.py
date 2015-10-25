@@ -28,13 +28,13 @@ import bpy
 import math
 # noinspection PyUnresolvedReferences
 from bpy.props import *
-from arch_tools import *
+from achm_tools import *
 
 
 # ------------------------------------------------------------------
 # Define operator class to create object
 # ------------------------------------------------------------------
-class VENETIAN(bpy.types.Operator):
+class AchmVenetian(bpy.types.Operator):
     bl_idname = "mesh.archimesh_venetian"
     bl_label = "Venetian blind"
     bl_description = "Venetian"
@@ -81,7 +81,7 @@ def create_object(self, context):
     mainobject.VenetianObjectGenerator.add()
 
     # we shape the main object and create other objects as children
-    shape_mesh_and_create_children(mainobject)
+    shape_mesh_and_create_children(mainobject, mainmesh)
 
     # we select, and activate, main object
     mainobject.select = True
@@ -97,15 +97,12 @@ def create_object(self, context):
 def update_object(self, context):
     # When we update, the active object is the main object
     o = bpy.context.active_object
+    oldmesh = o.data
+    oldname = o.data.name
     # Now we deselect that object to not delete it.
     o.select = False
-    # Remove mesh data
-    o.data.user_clear()
-    bpy.data.meshes.remove(o.data)
     # and we create a new mesh
-    objmesh = bpy.data.meshes.new("VenetianFrame")
-    o.data = objmesh
-    o.data.use_fake_user = True
+    tmp_mesh = bpy.data.meshes.new("temp")
     # deselect all objects
     for obj in bpy.data.objects:
         obj.select = False
@@ -120,7 +117,11 @@ def update_object(self, context):
     remove_children(o)
 
     # Finally we create all that again (except main object),
-    shape_mesh_and_create_children(o, True)
+    shape_mesh_and_create_children(o, tmp_mesh, True)
+    o.data = tmp_mesh
+    # Remove data (mesh of active object),
+    bpy.data.meshes.remove(oldmesh)
+    tmp_mesh.name = oldname
     # and select, and activate, the main object
     o.select = True
     bpy.context.scene.objects.active = o
@@ -132,7 +133,7 @@ def update_object(self, context):
 # And, for the others, it creates object and mesh.
 # ------------------------------------------------------------------------------
 # noinspection PyUnusedLocal
-def shape_mesh_and_create_children(mainobject, update=False):
+def shape_mesh_and_create_children(mainobject, tmp_mesh, update=False):
     mp = mainobject.VenetianObjectGenerator[0]
     mat = None
     plastic = None
@@ -145,7 +146,7 @@ def shape_mesh_and_create_children(mainobject, update=False):
     # ------------------
     # Top
     # ------------------
-    create_venetian_top(mainobject.data, mp.width + 0.002, mp.depth + 0.002, -0.06)
+    create_venetian_top(tmp_mesh, mp.width + 0.002, mp.depth + 0.002, -0.06)
 
     # materials
     if mp.crt_mat:
@@ -358,7 +359,7 @@ bpy.types.Object.VenetianObjectGenerator = bpy.props.CollectionProperty(type=Obj
 # ------------------------------------------------------------------
 # Define panel class to modify object
 # ------------------------------------------------------------------
-class VenetianObjectgeneratorpanel(bpy.types.Panel):
+class AchmVenetianObjectgeneratorpanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_venetian_generator"
     bl_label = "Venetian"
     bl_space_type = 'VIEW_3D'

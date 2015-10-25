@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: arch_gltools.py
+# File: achm_gltools.py
 # support routines for OpenGL
 # Author: Antonio Vazquez (antonioya)
 #
@@ -36,7 +36,7 @@ import math
 import mathutils
 # noinspection PyUnresolvedReferences
 from bpy_extras import view3d_utils
-from room_maker import get_wall_points
+from achm_room_maker import get_wall_points
 
 
 # -------------------------------------------------------------

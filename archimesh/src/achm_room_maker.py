@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: room_maker.py
+# File: achm_room_maker.py
 # Automatic generation of rooms
 # Author: Antonio Vazquez (antonioya) and Eduardo Gutierrez
 #
@@ -32,7 +32,7 @@ import math
 import mathutils
 import datetime
 import time
-from arch_tools import *
+from achm_tools import *
 # noinspection PyUnresolvedReferences
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
@@ -40,7 +40,7 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 # ----------------------------------------------------------
 # Export menu UI
 # ----------------------------------------------------------
-class ExportRoom(bpy.types.Operator, ExportHelper):
+class AchmExportRoom(bpy.types.Operator, ExportHelper):
     bl_idname = "io_export.roomdata"
     bl_description = 'Export Room data (.dat)'
     bl_category = 'Archimesh'
@@ -148,7 +148,7 @@ class ExportRoom(bpy.types.Operator, ExportHelper):
 # ----------------------------------------------------------
 # Import menu UI
 # ----------------------------------------------------------
-class ImportRoom(bpy.types.Operator, ImportHelper):
+class AchmImportRoom(bpy.types.Operator, ImportHelper):
     bl_idname = "io_import.roomdata"
     bl_description = 'Import Room data (.dat)'
     bl_category = 'Archimesh'
@@ -304,7 +304,7 @@ class ImportRoom(bpy.types.Operator, ImportHelper):
 # ------------------------------------------------------------------
 # Define operator class to create rooms
 # ------------------------------------------------------------------
-class ROOM(bpy.types.Operator):
+class AchmRoom(bpy.types.Operator):
     bl_idname = "mesh.archimesh_room"
     bl_label = "Room"
     bl_description = "Generate room with walls, baseboard, floor and ceiling."
@@ -352,7 +352,7 @@ def create_room(self, context):
     roomobject.RoomGenerator[0].walls.add()
 
     # we shape the walls and create other objects as children of 'RoomObject'.
-    shape_walls_and_create_children(roomobject)
+    shape_walls_and_create_children(roomobject, roommesh)
 
     # we select, and activate, main object for the room.
     roomobject.select = True
@@ -384,15 +384,12 @@ def is_solidify(myobject):
 def update_room(self, context):
     # When we update, the active object is the main object of the room.
     o = bpy.context.active_object
+    oldmesh = o.data
+    oldname = o.data.name
     # Now we deselect that room object to not delete it.
     o.select = False
-    # Remove walls (mesh of room/active object),
-    o.data.user_clear()
-    bpy.data.meshes.remove(o.data)
     # and we create a new mesh for the walls:
-    roommesh = bpy.data.meshes.new("Room")
-    o.data = roommesh
-    o.data.use_fake_user = True
+    tmp_mesh = bpy.data.meshes.new("temp")
     # deselect all objects
     for obj in bpy.data.objects:
         obj.select = False
@@ -411,15 +408,19 @@ def update_room(self, context):
                         bpy.ops.object.modifier_remove(mod)
                 except:
                     pass
-                    # clear data
-                child.data.user_clear()
-                bpy.data.meshes.remove(child.data)
+                # clear data
+                old = child.data
                 child.select = True
                 bpy.ops.object.delete()
+                bpy.data.meshes.remove(old)
         except:
             pass
-            # Finally we create all that again (except main object),
-    shape_walls_and_create_children(o, True)
+    # Finally we create all that again (except main object),
+    shape_walls_and_create_children(o, tmp_mesh, True)
+    o.data = tmp_mesh
+    # Remove data (mesh of active object),
+    bpy.data.meshes.remove(oldmesh)
+    tmp_mesh.name = oldname
     # and select, and activate, the main object of the room.
     o.select = True
     bpy.context.scene.objects.active = o
@@ -448,14 +449,14 @@ def movetotopsolidify(myobject):
 # For walls, it only shapes mesh and creates modifier solidify (the modifier, only the first time).
 # And, for the others, it creates object and mesh.
 # ------------------------------------------------------------------------------
-def shape_walls_and_create_children(myroom, update=False):
+def shape_walls_and_create_children(myroom, tmp_mesh, update=False):
     rp = myroom.RoomGenerator[0]  # "rp" means "room properties".
     mybase = None
     myfloor = None
     myceiling = None
     myshell = None
     # Create the walls (only mesh, because the object is 'myRoom', created before).
-    create_walls(rp, myroom.data, get_blendunits(rp.room_height))
+    create_walls(rp, tmp_mesh, get_blendunits(rp.room_height))
     # Mark Seams
     select_vertices(myroom, [0, 1])
     mark_seam(myroom)
@@ -466,7 +467,7 @@ def shape_walls_and_create_children(myroom, update=False):
     set_normals(myroom, not rp.inverse)  # inside/outside
 
     if rp.wall_width > 0.0:
-        if False == update or is_solidify(myroom) is False:
+        if update is False or is_solidify(myroom) is False:
             set_modifier_solidify(myroom, get_blendunits(rp.wall_width))
         else:
             for mod in myroom.modifiers:
@@ -657,9 +658,9 @@ def make_wall(prv, wall, baseboard, lastface, lastx, lasty, height, myvertex, my
     sizey = math.sin(math.radians(angle)) * size
 
     # Create faces
-    if False == advanced or True == baseboard:
+    if advanced is False or baseboard is True:
         # Cases of this first option: Baseboard or wall without peak and without curve.
-        if True == baseboard and True == advanced and True == wall.curved:
+        if baseboard is True and advanced is True and wall.curved is True:
             (myvertex, myfaces, sizex, sizey, lastface) = make_curved_wall(myvertex, myfaces, size, angle,
                                                                            lastx, lasty, height, lastface,
                                                                            wall.curve_factor, int(wall.curve_arc_deg),
@@ -1514,7 +1515,7 @@ def add_wall(idx, box, wall):
 # ------------------------------------------------------------------
 # Define panel class to modify rooms.
 # ------------------------------------------------------------------
-class RoomGeneratorPanel(bpy.types.Panel):
+class AchmRoomGeneratorPanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_room_generator"
     bl_label = "Room"
     bl_space_type = 'VIEW_3D'

@@ -28,13 +28,13 @@ import bpy
 import math
 # noinspection PyUnresolvedReferences
 from bpy.props import *
-from arch_tools import *
+from achm_tools import *
 
 
 # ------------------------------------------------------------------
 # Define operator class to create object
 # ------------------------------------------------------------------
-class DOOR(bpy.types.Operator):
+class AchmDoor(bpy.types.Operator):
     bl_idname = "mesh.archimesh_door"
     bl_label = "Door"
     bl_description = "Door"
@@ -81,7 +81,8 @@ def create_object(self, context):
     mainobject.DoorObjectGenerator.add()
 
     # we shape the main object and create other objects as children
-    shape_mesh_and_create_children(mainobject)
+    shape_mesh(mainobject, mainmesh)
+    shape_children(mainobject)
 
     # we select, and activate, main object
     mainobject.select = True
@@ -97,15 +98,12 @@ def create_object(self, context):
 def update_object(self, context):
     # When we update, the active object is the main object
     o = bpy.context.active_object
+    oldmesh = o.data
+    oldname = o.data.name
     # Now we deselect that object to not delete it.
     o.select = False
-    # Remove mesh data
-    o.data.user_clear()
-    bpy.data.meshes.remove(o.data)
     # and we create a new mesh
-    objmesh = bpy.data.meshes.new("DoorFrame")
-    o.data = objmesh
-    o.data.use_fake_user = True
+    tmp_mesh = bpy.data.meshes.new("temp")
     # deselect all objects
     for obj in bpy.data.objects:
         obj.select = False
@@ -114,8 +112,8 @@ def update_object(self, context):
     #  Clear Parent objects (autohole)
     # ---------------------------------
     myparent = o.parent
-    ploc = myparent.location
     if myparent is not None:
+        ploc = myparent.location
         o.parent = None
         o.location = ploc
         # remove_children(parent)
@@ -125,10 +123,10 @@ def update_object(self, context):
                 # clear child data
                 child.hide = False  # must be visible to avoid bug
                 child.hide_render = False  # must be visible to avoid bug
-                child.data.user_clear()
-                bpy.data.meshes.remove(child.data)
+                old = child.data
                 child.select = True
                 bpy.ops.object.delete()
+                bpy.data.meshes.remove(old)
             except:
                 dummy = -1
 
@@ -145,7 +143,12 @@ def update_object(self, context):
     remove_children(o)
 
     # Finally we create all that again (except main object),
-    shape_mesh_and_create_children(o, True)
+    shape_mesh(o, tmp_mesh, True)
+    o.data = tmp_mesh
+    shape_children(o, True)
+    # Remove data (mesh of active object),
+    bpy.data.meshes.remove(oldmesh)
+    tmp_mesh.name = oldname
     # and select, and activate, the main object
     o.select = True
     bpy.context.scene.objects.active = o
@@ -157,10 +160,10 @@ def update_object(self, context):
 # And, for the others, it creates object and mesh.
 # ------------------------------------------------------------------------------
 # noinspection PyUnusedLocal
-def shape_mesh_and_create_children(mainobject, update=False):
+def shape_mesh(mainobject, tmp_mesh, update=False):
     mp = mainobject.DoorObjectGenerator[0]
     # Create only mesh, because the object is created before
-    create_doorframe(mp, mainobject.data)
+    create_doorframe(mp, tmp_mesh)
 
     remove_doubles(mainobject)
     set_normals(mainobject)
@@ -175,6 +178,16 @@ def shape_mesh_and_create_children(mainobject, update=False):
     # Lock
     mainobject.lock_location = (True, True, True)
     mainobject.lock_rotation = (True, True, True)
+
+    return
+
+# ------------------------------------------------------------------------------
+# Generate all Children
+#
+# ------------------------------------------------------------------------------
+# noinspection PyUnusedLocal
+def shape_children(mainobject, update=False):
+    mp = mainobject.DoorObjectGenerator[0]
 
     if mp.openside != "3":
         make_one_door(mp, mainobject, mp.frame_width, mp.openside)
@@ -328,7 +341,7 @@ bpy.types.Object.DoorObjectGenerator = bpy.props.CollectionProperty(type=ObjectP
 # ------------------------------------------------------------------
 # Define panel class to modify object
 # ------------------------------------------------------------------
-class DoorObjectgeneratorpanel(bpy.types.Panel):
+class AchmDoorObjectgeneratorpanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_door_generator"
     bl_label = "Door"
     bl_space_type = 'VIEW_3D'

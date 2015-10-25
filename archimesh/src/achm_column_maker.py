@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: column_maker.py
+# File: achm_column_maker.py
 # Automatic generation of columns
 # Author: Antonio Vazquez (antonioya)
 #
@@ -28,14 +28,14 @@
 # noinspection PyUnresolvedReferences
 import bpy
 import math
-from arch_tools import *
+from achm_tools import *
 
 
 # ------------------------------------------------------------------
 # Define UI class
 # Columns
 # ------------------------------------------------------------------
-class COLUMN(bpy.types.Operator):
+class AchmColumn(bpy.types.Operator):
     bl_idname = "mesh.archimesh_column"
     bl_label = "Column"
     bl_description = "Columns Generator"

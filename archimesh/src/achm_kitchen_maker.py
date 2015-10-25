@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: kitchen_maker.py
+# File: achm_kitchen_maker.py
 # Automatic generation of kitchen cabinet
 # Author: Antonio Vazquez (antonioya)
 #
@@ -31,7 +31,7 @@ import copy
 import sys
 import datetime
 import time
-from arch_tools import *
+from achm_tools import *
 from bpy_extras.io_utils import ExportHelper
 
 # ----------------------------------------------------------
@@ -46,7 +46,7 @@ RotationType_R180 = 3
 # ----------------------------------------------------------
 #    Export menu UI
 # ----------------------------------------------------------
-class ExportInventory(bpy.types.Operator, ExportHelper):
+class AchmExportInventory(bpy.types.Operator, ExportHelper):
     bl_idname = "io_export.kitchen_inventory"
     bl_description = 'Export kitchen inventory (.txt)'
     bl_category = 'Archimesh'
@@ -305,7 +305,7 @@ bpy.utils.register_class(CabinetProperties)
 # Define UI class
 # Kitchens
 # ------------------------------------------------------------------
-class KITCHEN(bpy.types.Operator):
+class AchmKitchen(bpy.types.Operator):
     bl_idname = "mesh.archimesh_kitchen"
     bl_label = "Cabinets"
     bl_description = "Cabinet Generator"

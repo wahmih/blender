@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: books_maker.py
+# File: achm_books_maker.py
 # Automatic generation of books
 # Author: Antonio Vazquez (antonioya)
 #
@@ -31,14 +31,14 @@ import math
 import random
 import copy
 import colorsys
-from arch_tools import *
+from achm_tools import *
 
 
 # ------------------------------------------------------------------
 # Define UI class
 # Books
 # ------------------------------------------------------------------
-class BOOKS(bpy.types.Operator):
+class AchmBooks(bpy.types.Operator):
     bl_idname = "mesh.archimesh_books"
     bl_label = "Books"
     bl_description = "Books Generator"

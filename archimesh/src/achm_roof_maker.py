@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: roof_maker.py
+# File: achm_roof_maker.py
 # Automatic generation of roofs
 # Author: Antonio Vazquez (antonioya)
 #
@@ -28,14 +28,14 @@
 # noinspection PyUnresolvedReferences
 import bpy
 import math
-from arch_tools import *
+from achm_tools import *
 
 
 # ------------------------------------------------------------------
 # Define UI class
 # Rooms
 # ------------------------------------------------------------------
-class ROOF(bpy.types.Operator):
+class AchmRoof(bpy.types.Operator):
     bl_idname = "mesh.archimesh_roof"
     bl_label = "Roof"
     bl_description = "Roof Generator"

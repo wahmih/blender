@@ -20,7 +20,7 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: arch_tools.py
+# File: achm_tools.py
 # support routines and general functions
 # Author: Antonio Vazquez (antonioya)
 #
@@ -997,11 +997,11 @@ def remove_children(myobject):
             except:
                 pass
             # clear child data
-            child.data.user_clear()
             if child.type == 'MESH':
-                bpy.data.meshes.remove(child.data)
+                old = child.data
                 child.select = True
                 bpy.ops.object.delete()
+                bpy.data.meshes.remove(old)
             if child.type == 'CURVE':
                 child.select = True
                 bpy.ops.object.delete()
@@ -1023,3 +1023,24 @@ def get_allparents(myobj):
     mylist.append(obj)
 
     return mylist
+
+
+# --------------------------------------------------------------------
+# Verify all faces are in vertice group to avoid Blander crash
+#
+# Review the faces array and remove any vertex out of the range
+# this avoid any bug that can appear avoiding Blender crash
+# --------------------------------------------------------------------
+def check_mesh_errors(myvertices, myfaces):
+    vmax = len(myvertices)
+
+    f = 0
+    for face in myfaces:
+        for v in face:
+            if v < 0 or v > vmax:
+                print("Face=" + str(f) + "->removed vertex=" + str(v))
+                myfaces[f].remove(v)
+        f += 1
+
+    return myfaces
+

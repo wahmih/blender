@@ -20,14 +20,14 @@
 # PEP8 compliant (https://www.python.org/dev/peps/pep-0008)
 
 # ----------------------------------------------------------
-# File: shelves_maker.py
+# File: achm_shelves_maker.py
 # Automatic generation of shelves
 # Author: Antonio Vazquez (antonioya)
 #
 # ----------------------------------------------------------
 import bpy
 import copy
-from arch_tools import *
+from achm_tools import *
 
 
 # ------------------------------------------------------------------
@@ -69,7 +69,7 @@ bpy.utils.register_class(ShelvesProperties)
 # Define UI class
 # Shelves
 # ------------------------------------------------------------------
-class SHELVES(bpy.types.Operator):
+class AchmShelves(bpy.types.Operator):
     bl_idname = "mesh.archimesh_shelves"
     bl_label = "Shelves"
     bl_description = "Shelves Generator"
