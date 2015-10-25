@@ -99,3 +99,6 @@ Changes in version 1.6.1
 =============================
 - Option to disable normal details.
 
+Changes in version 1.6.2
+=============================
+- Allow bigger number in some parameters
