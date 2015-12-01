@@ -102,3 +102,7 @@ Changes in version 1.6.1
 Changes in version 1.6.2
 =============================
 - Allow bigger number in some parameters
+
+Changes in version 1.6.3
+=============================
+- Improve tools panel
