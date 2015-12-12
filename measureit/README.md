@@ -106,3 +106,7 @@ Changes in version 1.6.2
 Changes in version 1.6.3
 =============================
 - Improve tools panel
+
+Changes in version 1.6.4
+=============================
+- Fix scale factor for radius and circunference length.
