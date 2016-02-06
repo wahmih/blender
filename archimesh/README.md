@@ -104,3 +104,7 @@ Changes in version 1.1.1
 - Some minor fix.
 
 This release contains changes in how the meshes are created due a change in Blender. Clear the archimesh folder before install new version.
+
+Changes in version 1.1.2
+=============================
+- Room from Draw now works for Grease Pencil Poly lines.
