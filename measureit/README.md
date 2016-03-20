@@ -110,3 +110,7 @@ Changes in version 1.6.3
 Changes in version 1.6.4
 =============================
 - Fix scale factor for radius and circunference length.
+
+Changes in version 1.6.5
+=============================
+- Fix render error due API change in 2.77.
