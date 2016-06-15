@@ -114,3 +114,7 @@ Changes in version 1.6.4
 Changes in version 1.6.5
 =============================
 - Fix render error due API change in 2.77.
+
+Changes in version 1.6.6
+=============================
+- Fix render error if output image is set to 16 bits.
