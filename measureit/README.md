@@ -118,3 +118,11 @@ Changes in version 1.6.5
 Changes in version 1.6.6
 =============================
 - Fix render error if output image is set to 16 bits.
+
+Changes in version 1.6.7
+=============================
+- Version included in Blender 2.78 release
+
+Changes in version 1.6.8
+=============================
+- Now is possible to hide unit of measurement
