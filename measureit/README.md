@@ -1,5 +1,7 @@
 MeasureIt
 =================
+*** NOTICE ***
+MeasureIt is now part of Blender official releases, so this Git repository is only for reference. If you want download last versions or report a bug, please uses Blender website.
 
 MeasureIt is an add-on designed for displaying measures in the viewport, making the process of design objects with exact measures, easier.
 
