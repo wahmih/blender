@@ -1,5 +1,7 @@
 Turnaround camera
 =================
+*** NOTICE ***
+This add-on is now part of Blender official releases, so this Git repository is only for reference. If you want download last versions or report a bug, please uses Blender website.
 
 Blender addon for adding camera rotation around an object.
 
